@@ -2,6 +2,7 @@
  * @file presence.service.ts
  * @description 实时在线与访问统计：心跳登记在线会话与博主活动，首次进入页面计浏览，返回在线人数、博主状态与统计。
  *   统计结果与开关短时缓存，博主最后在线时间节流写库；浏览与访客只存哈希和站点时区下的日期。
+ *   计浏览时用访客 IP 离线查询国家与省份计入汇总；开启近期访问时另记一行打码明细（博主本人不记）。IP 本身不落库。
  */
 import { randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
@@ -10,6 +11,8 @@ import { SitePresence } from '../../entities/site-presence.entity'
 import { PresenceStore } from './presence-store'
 import { SiteDayClock } from './presence-time'
 import { countablePath, type PresenceHeartbeatDto, type SavePresenceSettingsDto } from './presence.dto'
+import { GeoLookup, type GeoLocation } from './geo-lookup'
+import { RecentVisitsService } from './recent-visits.service'
 import { deviceKey, normalizeReferrer } from './traffic-keys'
 import { TrafficService } from './traffic.service'
 
@@ -39,6 +42,7 @@ export interface PresenceSettings {
   autoPresence: boolean
   publicStats: boolean
   invisible: boolean
+  recentVisits: boolean
   ownerLastSeenAt: string | null
 }
 
@@ -48,6 +52,8 @@ export interface HeartbeatContext {
   automated: boolean
   /** 只用于归类设备与浏览器大类，不保存 */
   userAgent?: string
+  /** 经可信代理解析的访客 IP：只用于查询地区与生成打码明细，不保存原值 */
+  ip?: string
   now?: Date
 }
 
@@ -63,6 +69,8 @@ export class PresenceService {
   constructor(
     private readonly em: EntityManager,
     private readonly traffic: TrafficService,
+    private readonly geo: GeoLookup,
+    private readonly recent: RecentVisitsService,
   ) {
     this.clock = new SiteDayClock(em)
   }
@@ -75,21 +83,32 @@ export class PresenceService {
     if (!context.automated) this.store.heartbeat(input.session, page, ms)
     if (context.isOwner) await this.touchOwner(now)
     const path = input.view ? page : null
-    if (path && !context.automated && context.visitorHash && this.store.claimView(context.visitorHash, path, ms)) {
-      await this.recordView(context.visitorHash, now, {
-        path,
-        referrer: normalizeReferrer(input.referrer),
-        userAgent: context.userAgent,
+    if (path && !context.automated && context.visitorHash && this.store.claimView(context.visitorHash, path, ms))
+      await this.countView(path, normalizeReferrer(input.referrer), context, {
+        now,
+        recentVisits: settings.recentVisits,
       })
-      this.statsCache = null
-      await this.traffic.prune(await this.clock.day(now))
-    }
     return {
       online: settings.publicStats ? this.store.online(ms) : null,
       owner: settings.autoPresence ? this.ownerState(settings, ms) : null,
       stats: settings.publicStats ? await this.loadStats(now) : null,
       readers: settings.publicStats && page ? this.store.readers(page, ms) : null,
     }
+  }
+
+  /** 计一次浏览：查询地区后计入汇总；开启近期访问且不是博主时另记一行打码明细 */
+  private async countView(
+    path: string,
+    referrer: string | null,
+    context: HeartbeatContext,
+    { now, recentVisits }: { now: Date; recentVisits: boolean },
+  ): Promise<void> {
+    const location = await this.geo.locate(context.ip)
+    await this.recordView(context.visitorHash, now, { path, referrer, userAgent: context.userAgent, location })
+    if (recentVisits && !context.isOwner)
+      await this.recent.record({ ip: context.ip, location, device: deviceKey(context.userAgent), path, referrer }, now)
+    this.statsCache = null
+    await this.traffic.prune(await this.clock.day(now))
   }
 
   /** 页面关闭时主动下线 */
@@ -110,17 +129,21 @@ export class PresenceService {
       autoPresence: row.autoPresence,
       publicStats: row.publicStats,
       invisible: row.invisible,
+      recentVisits: row.recentVisits,
       ownerLastSeenAt: this.lastSeen(row)?.toISOString() ?? null,
     }
   }
 
   async saveSettings(input: SavePresenceSettingsDto): Promise<PresenceSettings> {
+    // 关闭近期访问时清空已记录的明细，不留到 7 天后自然过期
+    if (input.recentVisits === false) await this.recent.clear()
     await this.em.fork().transactional(async (em) => {
       const row = await this.ensureRow(em)
       // 缺省的开关保持现值，便于以后只改其中一项。
       if (input.autoPresence !== undefined) row.autoPresence = input.autoPresence
       if (input.publicStats !== undefined) row.publicStats = input.publicStats
       if (input.invisible !== undefined) row.invisible = input.invisible
+      if (input.recentVisits !== undefined) row.recentVisits = input.recentVisits
       row.updatedAt = new Date()
     })
     this.settingsCache = null
@@ -164,7 +187,7 @@ export class PresenceService {
   private async recordView(
     visitorHash: string,
     now: Date,
-    page: { path: string; referrer: string | null; userAgent?: string },
+    page: { path: string; referrer: string | null; userAgent?: string; location: GeoLocation },
   ): Promise<void> {
     const day = await this.clock.day(now)
     await this.em.fork().transactional(async (em) => {
@@ -190,6 +213,7 @@ export class PresenceService {
         path: page.path,
         referrer: page.referrer,
         device: firstToday.length > 0 ? deviceKey(page.userAgent) : null,
+        location: firstToday.length > 0 ? page.location : null,
       })
     })
   }
@@ -228,6 +252,7 @@ export class PresenceService {
       autoPresence: true,
       publicStats: true,
       invisible: false,
+      recentVisits: false,
       ownerLastSeenAt: null,
       updatedAt: new Date(),
     })

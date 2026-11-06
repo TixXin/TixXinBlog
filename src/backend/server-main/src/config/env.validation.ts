@@ -48,6 +48,11 @@ class EnvironmentVariables {
   @IsOptional()
   MEDIA_DIRECTORY?: string
 
+  /** 访问统计的离线地区库目录（ip2region xdb）；缺省为后端目录下的 .geo/，没有数据文件时地区按未知记录 */
+  @IsString()
+  @IsOptional()
+  GEO_DATA_DIRECTORY?: string
+
   @IsString()
   @IsOptional()
   CORS_ORIGIN?: string

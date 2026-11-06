@@ -66,6 +66,8 @@ async function main() {
       assert.equal(of('page')?.total, row.views, `${row.day} 页面浏览之和应等于当日浏览`)
       assert.equal(of('device')?.total, row.visitors, `${row.day} 设备访客之和应等于当日访客`)
       assert.equal(of('referrer')?.total, row.visitors, `${row.day} 来源之和应等于当日落地访客`)
+      assert.equal(of('country')?.total, row.visitors, `${row.day} 国家访客之和应等于当日访客`)
+      assert.ok((of('region')?.total ?? 0) < row.visitors, `${row.day} 省份只覆盖有省份分布的国家`)
     }
     assert.ok(new Set(days.map((row) => row.visitors)).size > 5, '每日访客应有起伏')
 
@@ -76,6 +78,8 @@ async function main() {
     assert.ok(traffic.pages.some((page) => page.key.startsWith('/articles/')))
     assert.ok(traffic.referrers.some((referrer) => referrer.key === ''))
     assert.deepEqual(traffic.devices.map((device) => device.key).sort(), ['desktop', 'mobile'])
+    assert.deepEqual(traffic.countries.map((country) => country.key).sort(), ['', 'CN', 'JP', 'SG', 'US'])
+    assert.equal(traffic.regions[0]?.key, 'CN/广东省')
 
     // 重复补种不新增；清理只删样本，真实日期保留
     const again = await seed()
@@ -93,7 +97,7 @@ async function main() {
       [realDay],
     )
     process.stdout.write(
-      `访问统计样本通过：${days.length} 天按日汇总、跳过真实日期、页面/来源/设备之和自洽、不写今天、后台报表可读、幂等与清理保留真实记录\n`,
+      `访问统计样本通过：${days.length} 天按日汇总、跳过真实日期、页面/来源/设备/国家之和自洽、不写今天、后台报表可读、幂等与清理保留真实记录\n`,
     )
   } finally {
     if (reconnected) await fixture.testOrm.close(true)

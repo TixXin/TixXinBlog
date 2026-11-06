@@ -41,6 +41,7 @@ import { FriendLink } from '../entities/friend-link.entity'
 import { FriendLinkApplication } from '../entities/friend-link-application.entity'
 import { LinkSettings } from '../entities/link-settings.entity'
 import { SitePresence } from '../entities/site-presence.entity'
+import { SiteRecentVisit } from '../entities/site-recent-visit.entity'
 import { SiteVisitor } from '../entities/site-visitor.entity'
 import { SiteDailyStats } from '../entities/site-daily-stats.entity'
 import { SiteTrafficDaily } from '../entities/site-traffic-daily.entity'
@@ -112,6 +113,7 @@ const ORM_ENTITIES = [
   FriendLinkApplication,
   LinkSettings,
   SitePresence,
+  SiteRecentVisit,
   SiteVisitor,
   SiteDailyStats,
   SiteTrafficDaily,

@@ -1,30 +1,29 @@
 <!--
   @file traffic.vue
-  @description 后台访问统计：近 7/30/90 天的浏览与访客趋势、热门页面、来源与设备分布；数字来自匿名汇总
+  @description 后台访问统计：近 7/30/90 天的浏览与访客趋势、访客地区地图与排行、热门页面、来源与设备分布（匿名汇总），
+               以及默认关闭的近期访问明细（打码 IP、保留 7 天）
 -->
 <template>
   <section class="admin-traffic">
-    <header class="admin-page-header admin-traffic__header">
-      <div>
-        <h1>{{ t('admin-system.traffic.title') }}</h1>
-        <p>{{ t('admin-system.traffic.intro') }}</p>
-      </div>
-      <div class="admin-traffic__controls" role="group" :aria-label="t('admin-system.traffic.rangeLabel')">
-        <button
-          v-for="option in TRAFFIC_RANGES"
-          :key="option"
-          type="button"
-          :aria-pressed="range === option"
-          :class="{ 'is-active': range === option }"
-          @click="range = option"
-        >
-          {{ t(`admin-system.traffic.ranges.${option}`) }}
-        </button>
-        <button type="button" :disabled="pending" :aria-busy="pending" @click="refresh">
-          <Icon name="lucide:refresh-cw" size="14" />{{ t('admin-system.traffic.refresh') }}
-        </button>
-      </div>
-    </header>
+    <AdminPageHeader :title="t('admin-system.traffic.title')" :intro="t('admin-system.traffic.intro')">
+      <template #actions>
+        <div class="admin-traffic__controls" role="group" :aria-label="t('admin-system.traffic.rangeLabel')">
+          <button
+            v-for="option in TRAFFIC_RANGES"
+            :key="option"
+            type="button"
+            :aria-pressed="range === option"
+            :class="{ 'is-active': range === option }"
+            @click="range = option"
+          >
+            {{ t(`admin-system.traffic.ranges.${option}`) }}
+          </button>
+          <button type="button" :disabled="pending" :aria-busy="pending" @click="refreshAll">
+            <Icon name="lucide:refresh-cw" size="14" />{{ t('admin-system.traffic.refresh') }}
+          </button>
+        </div>
+      </template>
+    </AdminPageHeader>
     <ClientOnly>
       <p v-if="pending && !data" role="status">{{ t('admin-system.traffic.loading') }}</p>
       <p v-if="error" role="alert">{{ error }}</p>
@@ -57,6 +56,14 @@
             <AdminTrendBars :days="series('visitors')" :label="t('admin-system.traffic.trendVisitors')" />
           </section>
         </div>
+        <div class="admin-traffic__geo">
+          <LazyAdminTrafficMap :countries="data.countries ?? []" />
+          <AdminTrafficRanking
+            :title="t('admin-system.traffic.regions')"
+            :entries="data.regions ?? []"
+            :label="regionText"
+          />
+        </div>
         <div class="admin-traffic__rankings">
           <AdminTrafficRanking :title="t('admin-system.traffic.pages')" :entries="data.pages" :label="pageLabel" />
           <AdminTrafficRanking
@@ -76,18 +83,25 @@
           />
         </div>
       </template>
+      <AdminTrafficRecentVisits ref="visits" />
     </ClientOnly>
   </section>
 </template>
 
 <script setup lang="ts">
-import { TRAFFIC_OTHER_KEY, TRAFFIC_RANGES } from '~/features/presence/traffic'
+import { regionLabel, TRAFFIC_OTHER_KEY, TRAFFIC_RANGES } from '~/features/presence/traffic'
 import { formatNumber } from '~/utils/format'
 
 definePageMeta({ layout: 'admin', key: '/admin/traffic' })
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useSeoMeta({ title: () => t('admin-system.traffic.title'), robots: 'noindex, nofollow' })
 const { range, data, pending, error, refresh } = useAdminTraffic()
+const visits = ref<{ refresh(): Promise<void> | undefined } | null>(null)
+async function refreshAll() {
+  await Promise.all([refresh(), visits.value?.refresh()])
+}
+const regionText = (key: string) =>
+  key === TRAFFIC_OTHER_KEY ? t('admin-system.traffic.otherRegions') : regionLabel(key, locale.value)
 
 function series(field: 'views' | 'visitors') {
   return (data.value?.days ?? []).map((day) => ({ date: day.date, value: day[field] }))
@@ -113,11 +127,6 @@ const referrerLabel = (key: string) =>
     font-size: 0.9375rem;
     font-weight: 600;
   }
-}
-
-.admin-traffic__header {
-  flex-wrap: wrap;
-  gap: 0.75rem;
 }
 
 .admin-traffic__controls {
@@ -190,6 +199,16 @@ const referrerLabel = (key: string) =>
   // 复用概览页的迷你柱状图，这里放大高度作为主图
   :deep(.trend-bars__plot) {
     height: 7rem;
+  }
+}
+
+.admin-traffic__geo {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: 0.75rem;
+
+  @media (max-width: 960px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

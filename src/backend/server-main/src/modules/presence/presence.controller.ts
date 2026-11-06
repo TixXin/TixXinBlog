@@ -1,6 +1,6 @@
 /**
  * @file presence.controller.ts
- * @description 公开心跳、离开上报、正在阅读查询，以及后台开关与访问统计接口。心跳不要求登录：携带有效博主访问令牌时记为博主在线，
+ * @description 公开心跳、离开上报、正在阅读查询，以及后台开关、访问统计与近期访问接口。心跳不要求登录：携带有效博主访问令牌时记为博主在线，
  *   令牌缺失、过期或无效都按普通访客处理，不返回错误。
  */
 import { Body, Controller, Get, HttpCode, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
@@ -15,10 +15,12 @@ import {
   PresenceHeartbeatDto,
   PresenceLeaveDto,
   PresenceReadersQueryDto,
+  RecentVisitsQueryDto,
   SavePresenceSettingsDto,
   TrafficQueryDto,
 } from './presence.dto'
 import { PresenceService } from './presence.service'
+import { RecentVisitsService } from './recent-visits.service'
 import { TrafficService } from './traffic.service'
 
 @Controller('presence')
@@ -40,6 +42,8 @@ export class PresenceController {
       isOwner: await this.isOwner(request.headers.authorization),
       automated: isAutomatedClient(request.headers['user-agent']),
       userAgent: request.headers['user-agent'],
+      // 只有配置了可信代理（TRUSTED_PROXY_CIDRS）时 Express 才采信转发头，否则为直连地址
+      ip: request.ip,
     })
   }
 
@@ -74,6 +78,7 @@ export class AdminPresenceController {
   constructor(
     private readonly presence: PresenceService,
     private readonly traffic: TrafficService,
+    private readonly recent: RecentVisitsService,
   ) {}
 
   @Get() settings() {
@@ -87,5 +92,10 @@ export class AdminPresenceController {
   /** 近 7/30/90 天的访问趋势、热门页面、来源与设备分布 */
   @Get('traffic') report(@Query() query: TrafficQueryDto) {
     return this.traffic.report(query.days)
+  }
+
+  /** 近 7 天的近期访问明细（开关开启后才有数据），按时间倒序分页 */
+  @Get('visits') visits(@Query() query: RecentVisitsQueryDto) {
+    return this.recent.list(query.page)
   }
 }

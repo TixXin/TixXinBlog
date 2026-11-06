@@ -5,7 +5,7 @@
  */
 
 /** 每天每个维度最多登记的不同键；超出部分计入 (other)，防止伪造路径或来源撑大表 */
-export const TRAFFIC_KEYS_PER_DAY = { page: 1000, referrer: 200 } as const
+export const TRAFFIC_KEYS_PER_DAY = { page: 1000, referrer: 200, region: 500 } as const
 export const OTHER_KEY = '(other)'
 /** 访问构成保留天数；每日浏览与访客汇总不清理，累计浏览依赖它 */
 export const TRAFFIC_RETENTION_DAYS = 365

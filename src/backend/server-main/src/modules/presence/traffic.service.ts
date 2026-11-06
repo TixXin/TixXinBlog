@@ -1,12 +1,13 @@
 /**
  * @file traffic.service.ts
- * @description 访问构成：计浏览时按页面、来源域名与设备累加当日汇总，后台按 7/30/90 天查询趋势与排行。
- *   只写汇总数字；每天每个维度的不同键有上限，超出计入 (other)；访问构成保留 365 天，在写入时顺带清理。
+ * @description 访问构成：计浏览时按页面、来源域名、设备与国家/省份累加当日汇总，后台按 7/30/90 天查询趋势、排行与地区分布。
+ *   只写汇总数字，IP 只在请求内用于查询地区；每天每个维度的不同键有上限，超出计入 (other)；访问构成保留 365 天，在写入时顺带清理。
  */
 import { randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
 import type { TrafficDimension } from '../../entities/site-traffic-daily.entity'
+import type { GeoLocation } from './geo-lookup'
 import { readSiteTimeZone, siteDay } from '../site/site-time-zone'
 import { OTHER_KEY, shiftDay, TRAFFIC_KEYS_PER_DAY, TRAFFIC_RETENTION_DAYS } from './traffic-keys'
 
@@ -16,6 +17,8 @@ export interface TrafficInput {
   referrer: string | null
   /** 当日首次到访时的“设备/浏览器”；不是首次到访为 null */
   device: string | null
+  /** 当日首次到访时的地区；不是首次到访为 null */
+  location?: GeoLocation | null
 }
 
 export interface TrafficReport {
@@ -27,6 +30,10 @@ export interface TrafficReport {
   referrers: { key: string; count: number }[]
   devices: { key: string; count: number }[]
   browsers: { key: string; count: number }[]
+  /** 全部国家（ISO 代码，空串为未知），供地图着色 */
+  countries: { key: string; count: number }[]
+  /** 省份或州排行，键为“国家代码/名称” */
+  regions: { key: string; count: number }[]
 }
 
 /** 排行最多返回的条数 */
@@ -44,6 +51,17 @@ export class TrafficService {
     if (input.referrer !== null)
       await this.increment(em, { day, dimension: 'referrer', key: input.referrer, cap: TRAFFIC_KEYS_PER_DAY.referrer })
     if (input.device !== null) await this.increment(em, { day, dimension: 'device', key: input.device, cap: null })
+    if (input.location) {
+      const { country, region } = input.location
+      await this.increment(em, { day, dimension: 'country', key: country, cap: null })
+      if (country && region)
+        await this.increment(em, {
+          day,
+          dimension: 'region',
+          key: `${country}/${region}`,
+          cap: TRAFFIC_KEYS_PER_DAY.region,
+        })
+    }
   }
 
   /** 每个进程每天最多清理一次超出保留期的访问构成 */
@@ -91,6 +109,8 @@ export class TrafficService {
       referrers: of('referrer').slice(0, TOP),
       devices: sumBy(devices, (key) => key.split('/')[0]!),
       browsers: sumBy(devices, (key) => key.split('/')[1] ?? 'other'),
+      countries: of('country'),
+      regions: of('region').slice(0, TOP),
     }
   }
 

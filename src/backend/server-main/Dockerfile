@@ -18,6 +18,14 @@ COPY src/backend/server-main src/backend/server-main
 RUN corepack pnpm --filter server-main build \
   && corepack pnpm --filter server-main --prod deploy /out
 
+# 访问统计的离线地区库（ip2region xdb）：按固定提交下载并校验 SHA256，单独成层，版本不变时直接复用缓存。
+# 版本与校验值和 scripts/geo-data.json 一致（geo-lookup.spec.ts 核对）；只有 runtime 镜像用到。
+FROM scratch AS geo
+ADD --chmod=644 --checksum=sha256:46249ad1b33bcaa4cc37475b93746cec2b00acffc3316cc4f56167ac821ea2ad \
+  https://raw.githubusercontent.com/lionsoul2014/ip2region/6a276cc7c4f9f2d7ff1d8ace14b91af59752f943/data/ip2region_v4.xdb /geo/
+ADD --chmod=644 --checksum=sha256:939f6b46bd2b8bec3cf7c5ceb8ba782266ae9b1f35b5ba7916700dec0b7506ed \
+  https://raw.githubusercontent.com/lionsoul2014/ip2region/6a276cc7c4f9f2d7ff1d8ace14b91af59752f943/data/ip2region_v6.xdb /geo/
+
 FROM build AS migration
 WORKDIR /repo/src/backend/server-main
 ENV NODE_ENV=production
@@ -44,8 +52,10 @@ CMD ["node", "scripts/operations.mjs", "status"]
 FROM node:26-alpine AS runtime
 ENV NODE_ENV=production \
     PORT=3000 \
-    MEDIA_DIRECTORY=/app/var/media
+    MEDIA_DIRECTORY=/app/var/media \
+    GEO_DATA_DIRECTORY=/app/geo
 WORKDIR /app
+COPY --from=geo /geo /app/geo
 COPY --from=build --chown=node:node /out .
 RUN mkdir -p /app/var/media && chown -R node:node /app/var
 EXPOSE 3000

@@ -1,9 +1,13 @@
-/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别与隐身与隐身、自动化客户端、开关与鉴权。 */
+/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、地区汇总、近期访问的开关与打码、博主识别与隐身、自动化客户端、开关与鉴权。 */
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
 
+// 信任本机代理，用 X-Forwarded-For 模拟访客地址；地区库只在本机下载过时存在，CI 中地区按未知记录
+process.env.TRUSTED_PROXY_CIDRS = '127.0.0.1/32,::1/128'
+const geoReady = existsSync('.geo/ip2region_v4.xdb') && existsSync('.geo/ip2region_v6.xdb')
 const fixture = await createBrowserTestApp('http://localhost')
 const BROWSER = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15'
 try {
@@ -15,7 +19,7 @@ try {
   assert.equal(login.status, 200)
   const token = (await login.json()).data.accessToken
 
-  async function call(path, { method = 'POST', body, visitor, admin = false, agent = BROWSER } = {}) {
+  async function call(path, { method = 'POST', body, visitor, admin = false, agent = BROWSER, ip } = {}) {
     for (let attempt = 0; attempt < 4; attempt++) {
       const response = await fetch(fixture.origin + '/api/v1' + path, {
         method,
@@ -24,6 +28,7 @@ try {
           'User-Agent': agent,
           ...(visitor ? { 'X-Visitor-Id': visitor } : {}),
           ...(admin ? { Authorization: `Bearer ${token}` } : {}),
+          ...(ip ? { 'X-Forwarded-For': ip } : {}),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       })
@@ -48,7 +53,7 @@ try {
   assert.equal((await call('/admin/presence', { method: 'GET' })).status, 401)
   assert.deepEqual(
     { ...(await call('/admin/presence', { method: 'GET', admin: true })).body.data, ownerLastSeenAt: null },
-    { autoPresence: true, publicStats: true, invisible: false, ownerLastSeenAt: null },
+    { autoPresence: true, publicStats: true, invisible: false, recentVisits: false, ownerLastSeenAt: null },
   )
 
   // 访问统计：空库返回补零的 30 天与空排行；只接受 7/30/90 天；需要登录
@@ -238,8 +243,57 @@ try {
     400,
   )
 
+  // 地区：当日首次到访按 IP 查国家与省份计入汇总；查不到（含本机地址）记为空串
+  const visits = async (query = '') => {
+    const result = await call(`/admin/presence/visits${query}`, { method: 'GET', admin: true })
+    assert.equal(result.status, 200, JSON.stringify(result.body))
+    return result.body.data
+  }
+  assert.deepEqual(await visits(), { items: [], total: 0, page: 1, pageSize: 50 })
+  await beat(
+    { session: session(), path: '/gallery', view: true, referrer: 'v2ex.com' },
+    { visitor: randomUUID(), ip: '1.207.89.207' },
+  )
+  assert.equal((await visits()).total, 0, '近期访问默认关闭，不记明细')
+  traffic = await report()
+  const country = (key) => traffic.countries.find((item) => item.key === key)?.count ?? 0
+  assert.ok(country('') >= 3, '没有可查地址的访客记为未知地区')
+  if (geoReady) {
+    assert.equal(country('CN'), 1)
+    assert.deepEqual(traffic.regions, [{ key: 'CN/贵州省', count: 1 }])
+  } else assert.deepEqual(traffic.regions, [])
+
+  // 近期访问：开启后记打码明细（博主本人不记），关闭时清空；接口需要登录、页码受限
+  const enabled = await call('/admin/presence', { method: 'PATCH', admin: true, body: { recentVisits: true } })
+  assert.equal(enabled.body.data.recentVisits, true)
+  await beat({ session: session(), path: '/projects', view: true }, { visitor: randomUUID(), ip: '2408:8456:a1:2f::1' })
+  await beat({ session: session(), path: '/about', view: true }, { visitor: randomUUID(), admin: true, ip: '8.8.8.8' })
+  const recent = await visits()
+  assert.equal(recent.total, 1)
+  const [visit] = recent.items
+  assert.deepEqual(
+    { ...visit, visitedAt: undefined },
+    {
+      visitedAt: undefined,
+      maskedIp: '2408:8456:a1::*',
+      country: geoReady ? 'CN' : '',
+      region: geoReady ? '北京市' : '',
+      city: geoReady ? '北京市' : '',
+      device: 'desktop/safari',
+      path: '/projects',
+      referrer: null,
+    },
+  )
+  assert.ok(Date.now() - Date.parse(visit.visitedAt) < 60_000)
+  assert.equal((await sql(`select count(*)::int as n from site_recent_visit where masked_ip like '%2f%'`))[0].n, 0)
+  assert.equal((await call('/admin/presence/visits?page=0', { method: 'GET', admin: true })).status, 400)
+  assert.equal((await call('/admin/presence/visits', { method: 'GET' })).status, 401)
+  const disabled = await call('/admin/presence', { method: 'PATCH', admin: true, body: { recentVisits: false } })
+  assert.equal(disabled.body.data.recentVisits, false)
+  assert.equal((await sql('select count(*)::int as n from site_recent_visit'))[0].n, 0, '关闭时清空明细')
+
   console.log(
-    'presence integration: 在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别、自动化客户端、北京时间切日与开关通过',
+    `presence integration: 在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、地区汇总（${geoReady ? '真实地区库' : '无地区库'}）、近期访问开关与打码、博主识别、自动化客户端、北京时间切日与开关通过`,
   )
 } finally {
   await fixture.close()

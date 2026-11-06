@@ -119,18 +119,21 @@
 
 `POST /presence/leave` 接受 `{ session }`（约束同上），页面关闭（`pagehide`）时由 `navigator.sendBeacon` 发送，立即把该会话移出在线人数与正在阅读，成功返回 204；与心跳共用限流配额。`GET /presence/readers` 以查询参数 `path`（≤512 字符）指定页面，返回 `{ readers }`，口径同心跳响应，只查询不登记心跳，按普通读取限流。
 
-缺少 `User-Agent` 或命中常见爬虫、监控与脚本客户端标识的请求不计入在线人数与浏览，但照常返回数字。只保存访客标识的 SHA-256 哈希、首次到访时间与最后到访日期，以及按日期汇总的浏览与访客数、页面路径、来源域名和设备大类计数；不保存 IP、完整 `User-Agent` 或完整来源地址，路径与来源不与访客关联。这些运行数据随完整备份保存，不进入内容包。
+缺少 `User-Agent` 或命中常见爬虫、监控与脚本客户端标识的请求不计入在线人数与浏览，但照常返回数字。只保存访客标识的 SHA-256 哈希、首次到访时间与最后到访日期，以及按日期汇总的浏览与访客数、页面路径、来源域名、设备大类和国家/省份计数；不保存 IP、完整 `User-Agent` 或完整来源地址，路径与来源不与访客关联。国家与省份由访客 IP（只在配置了 `TRUSTED_PROXY_CIDRS` 时采信转发头）在请求内用离线地区库 [ip2region](https://github.com/lionsoul2014/ip2region) 查询，不请求外部服务；地区库位于 `GEO_DATA_DIRECTORY`（生产镜像内置于 `/app/geo`，开发用 `corepack pnpm --filter server-main geo:fetch` 下载到后端目录的 `.geo/`），缺失时地区记为未知。后台开启“近期访问”后另记打码明细，见下文。这些运行数据随完整备份保存，不进入内容包。
 
 该接口使用独立内存限流：每个 IPv4 地址或 IPv6 `/64` 网段每分钟最多 60 次，不消耗普通业务写入配额；超限返回 429 与 `Retry-After`。
 
-`GET /admin/presence/traffic` 以查询参数 `days`（`7`、`30` 或 `90`，默认 `30`）返回站点时区截至今天的访问统计 `{ from, to, days, totals, pages, referrers, devices, browsers }`：
+`GET /admin/presence/traffic` 以查询参数 `days`（`7`、`30` 或 `90`，默认 `30`）返回站点时区截至今天的访问统计 `{ from, to, days, totals, pages, referrers, devices, browsers, countries, regions }`：
 
 - `days`：逐日 `{ date, views, visitors }`，没有记录的日期补 0；`totals` 为区间合计，访客是每日访客之和（同一访客跨天会重复计）。
 - `pages`、`referrers`：区间内浏览最多的前 10 个路径与来源，元素为 `{ key, count }`。来源只计页面加载后的第一次浏览，`key` 为去掉 `www.` 的小写域名，空串表示直接访问。
 - `devices`、`browsers`：当日首次到访访客的设备（`desktop`、`mobile`）与浏览器大类（`chrome`、`safari`、`firefox`、`edge`、`other`）分布，由 `User-Agent` 当场归类，不保存原文。
-- 每天每个维度最多登记 1000 个不同路径或 200 个不同来源，超出的计入 `(other)`。访问构成（页面、来源、设备）按日汇总在 `site_traffic_daily`，保留 365 天，在计浏览时顺带清理；每日浏览与访客汇总不清理。
+- `countries`：当日首次到访访客的国家分布（全部，不截断），`key` 为 ISO 3166-1 alpha-2 代码，空串为未知（内网、保留地址、地区库未覆盖或没有地区库）；港澳台按地区库口径归入 `CN`。`regions`：省份或州的前 10 名，`key` 为“国家代码/名称”（如 `CN/广东省`、`US/California`）。
+- 每天每个维度最多登记 1000 个不同路径、200 个不同来源或 500 个不同省份，超出的计入 `(other)`。访问构成（页面、来源、设备、国家、省份）按日汇总在 `site_traffic_daily`，保留 365 天，在计浏览时顺带清理；每日浏览与访客汇总不清理。
 
-`GET /admin/presence` 返回 `{ autoPresence, publicStats, invisible, ownerLastSeenAt }`；`PATCH /admin/presence` 接受可选的布尔字段 `autoPresence`、`publicStats` 与 `invisible`，未提交的字段保持现值。自动在线与公开统计默认开启，隐身默认关闭；三者与站点资料分开存储，不随内容包迁移。隐身时博主心跳照常记录（后台仍能看到最后在线时间），但心跳响应的 `owner` 对所有人都是 `{ status: 'away', lastSeenAt: null }`。
+`GET /admin/presence/visits` 以查询参数 `page`（1–1000，默认 1）按时间倒序返回近 7 天的近期访问明细 `{ items, total, page, pageSize }`（每页 50 条），元素为 `{ visitedAt, maskedIp, country, region, city, device, path, referrer }`。明细只在“近期访问”开启后记录：每次计入浏览记一行，`maskedIp` 为打码地址（IPv4 留前三段如 `1.207.89.*`，IPv6 留前三组如 `2408:8456:a1::*`），`device` 为“设备/浏览器”大类，`referrer` 为来源域名（空串直接访问，`null` 站内跳转）；博主本人的访问不记录。明细存于 `site_recent_visit`，超过 7 天的行在写入时每小时最多清理一次。
+
+`GET /admin/presence` 返回 `{ autoPresence, publicStats, invisible, recentVisits, ownerLastSeenAt }`；`PATCH /admin/presence` 接受可选的布尔字段 `autoPresence`、`publicStats`、`invisible` 与 `recentVisits`，未提交的字段保持现值。自动在线与公开统计默认开启，隐身与近期访问默认关闭；关闭近期访问时立即清空已记录的明细。这些开关与站点资料分开存储，不随内容包迁移。隐身时博主心跳照常记录（后台仍能看到最后在线时间），但心跳响应的 `owner` 对所有人都是 `{ status: 'away', lastSeenAt: null }`。
 
 ## 写入版本与幂等
 

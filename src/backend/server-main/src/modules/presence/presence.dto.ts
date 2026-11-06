@@ -3,7 +3,7 @@
  * @description 心跳、离开、正在阅读查询、后台访问统计与开关的输入边界；路径与来源只以汇总形式落库
  */
 import { Type } from 'class-transformer'
-import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator'
 
 export class PresenceHeartbeatDto {
   /** 浏览器会话 ID：sessionStorage 中的 32 位十六进制随机值，只用于在线人数 */
@@ -37,6 +37,13 @@ export class SavePresenceSettingsDto {
   @IsOptional() @IsBoolean() autoPresence?: boolean
   @IsOptional() @IsBoolean() publicStats?: boolean
   @IsOptional() @IsBoolean() invisible?: boolean
+  /** 近期访问明细（打码 IP、地区、设备，保留 7 天）；关闭时清空已有明细 */
+  @IsOptional() @IsBoolean() recentVisits?: boolean
+}
+
+/** 近期访问明细分页 */
+export class RecentVisitsQueryDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(1000) page: number = 1
 }
 
 /** 计入浏览的站内页面路径：以 / 开头、不含查询与片段，排除后台、预览、初始化与接口路径 */

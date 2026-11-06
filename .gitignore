@@ -38,6 +38,8 @@ coverage/
 # 运行时媒体
 **/var/media/
 **/var/backups/
+# 访问统计的离线地区库（ip2region xdb），由 geo:fetch 或镜像构建按固定版本下载
+src/backend/server-main/.geo/
 
 # 可选编辑器与代理工具（只在本机保留）
 /.claude/

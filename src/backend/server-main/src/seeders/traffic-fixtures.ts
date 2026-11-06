@@ -1,8 +1,9 @@
 /**
  * @file traffic-fixtures.ts
  * @description 访问统计开发样本：截至昨天（站点时区）的 30 天按日汇总，含工作日与周末起伏、热门页面、
- *   直接访问与站外来源、桌面与移动设备；只补没有真实记录的日期，不改动今天的实时计数。
- *   数字为开发代表值；每日浏览等于各页面浏览之和，每日访客等于各设备访客之和。
+ *   直接访问与站外来源、桌面与移动设备、国家与省份（含未知地区）；只补没有真实记录的日期，不改动今天的实时计数。
+ *   数字为开发代表值；每日浏览等于各页面浏览之和，每日访客等于各设备访客之和、也等于各国家访客之和，
+ *   各国省份之和等于该国访客数。
  */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { randomUUID } from 'node:crypto'
@@ -35,8 +36,37 @@ const DEVICES: [string, number][] = [
   ['desktop/safari', 3],
   ['mobile/chrome', 2],
 ]
+/** 国家用 ISO 代码，空串为查不到地区的访客 */
+const COUNTRIES: [string, number][] = [
+  ['CN', 16],
+  ['US', 3],
+  ['JP', 1],
+  ['SG', 1],
+  ['', 1],
+]
+/** 有省份分布的国家：省份键为“代码/名称”，名称与 ip2region 的写法一致 */
+const REGIONS: Record<string, [string, number][]> = {
+  CN: [
+    ['CN/广东省', 6],
+    ['CN/北京市', 4],
+    ['CN/上海市', 3],
+    ['CN/浙江省', 2],
+    ['CN/贵州省', 1],
+  ],
+  US: [
+    ['US/California', 2],
+    ['US/Washington', 1],
+  ],
+}
 export const TRAFFIC_FIXTURE_COUNT =
-  TRAFFIC_DAYS * (1 + STATIC_PAGES.length + ARTICLE_WEIGHTS.length + REFERRERS.length + DEVICES.length)
+  TRAFFIC_DAYS *
+  (1 +
+    STATIC_PAGES.length +
+    ARTICLE_WEIGHTS.length +
+    REFERRERS.length +
+    DEVICES.length +
+    COUNTRIES.length +
+    Object.values(REGIONS).reduce((sum, list) => sum + list.length, 0))
 
 /** 按权重把总数分给各项（最大余数法），保证各项之和等于总数 */
 export function distribute(total: number, weights: [string, number][]): [string, number][] {
@@ -109,10 +139,13 @@ export async function seedTrafficFixtures(em: EntityManager, _storage: unknown, 
       progress,
     )
     if (!owned) continue
+    const countries = distribute(visitors, COUNTRIES)
     const groups: [TrafficDimension, [string, number][]][] = [
       ['page', distribute(views, pages)],
       ['referrer', distribute(visitors, REFERRERS)],
       ['device', distribute(visitors, DEVICES)],
+      ['country', countries],
+      ['region', countries.flatMap(([code, count]) => (REGIONS[code] ? distribute(count, REGIONS[code]) : []))],
     ]
     for (const [dimension, entries] of groups)
       for (const [key, count] of entries)

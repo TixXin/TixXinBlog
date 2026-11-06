@@ -1,0 +1,9 @@
+{
+  "source": "https://github.com/lionsoul2014/ip2region",
+  "license": "Apache-2.0 OR MIT",
+  "commit": "6a276cc7c4f9f2d7ff1d8ace14b91af59752f943",
+  "files": {
+    "ip2region_v4.xdb": "46249ad1b33bcaa4cc37475b93746cec2b00acffc3316cc4f56167ac821ea2ad",
+    "ip2region_v6.xdb": "939f6b46bd2b8bec3cf7c5ceb8ba782266ae9b1f35b5ba7916700dec0b7506ed"
+  }
+}

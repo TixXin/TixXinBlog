@@ -1005,7 +1005,7 @@
     },
     "traffic": {
       "title": "Traffic",
-      "intro": "Views, visitors, top pages, sources and devices summarized by the site time zone. Only anonymous totals are stored; traffic breakdowns are kept for 365 days.",
+      "intro": "Views, visitors, top pages, sources, devices and visitor locations summarized by the site time zone. Locations are looked up offline from the visitor IP, which is never stored; breakdowns are kept for 365 days.",
       "rangeLabel": "Range",
       "ranges": {
         "7": "Last 7 days",
@@ -1042,6 +1042,34 @@
         "firefox": "Firefox",
         "edge": "Edge",
         "other": "Other"
+      },
+      "regions": "Top regions",
+      "unknownPlace": "Unknown location",
+      "otherRegions": "Other regions",
+      "map": {
+        "title": "Visitors by country",
+        "loading": "Loading map…",
+        "loadFailed": "Couldn't load the map. Region rankings are unaffected.",
+        "unknown": "{count} more visitors have an unknown location (private, reserved or uncovered addresses).",
+        "summary": "Top locations: {list}",
+        "tooltip": "{name}: {count} visitors"
+      },
+      "visits": {
+        "title": "Recent visits",
+        "enable": "Record recent visits",
+        "hint": "Off by default. When on, each view is recorded with a masked IP (first three IPv4 octets or IPv6 groups only), location, device, page and source, kept for 7 days. Your own visits aren't recorded. Turning it off deletes the recorded visits immediately.",
+        "empty": "No new visits since this was turned on.",
+        "time": "Time",
+        "ip": "IP (masked)",
+        "place": "Location",
+        "device": "Device",
+        "page": "Page",
+        "referrer": "Source",
+        "internal": "Internal",
+        "pagination": "Recent visits pages",
+        "loadFailed": "Couldn't load recent visits. Try again later.",
+        "saveFailed": "Couldn't save the recent visits setting. Try again later.",
+        "disableConfirm": "Turning this off deletes the recorded visits right away. Turn it off?"
       }
     }
   }
