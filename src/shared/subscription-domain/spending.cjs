@@ -1,6 +1,7 @@
 /** @file spending.cjs @description 已发生花费的估算：按价格历史分段枚举扣费、按币种与年份汇总，以及同周期涨跌价记录 */
 'use strict'
 const { cycleMonths, datesBetween, chargeUntil } = require('./schedule.cjs')
+const { isPausedOn } = require('./pauses.cjs')
 
 const CHARGE_LIMIT = 2400
 /** 价格历史按生效日切成区段；首段向前延伸到首次扣费，没有历史时以当前价格为唯一区段 */
@@ -40,7 +41,8 @@ function charges(item, today) {
         : from === first || previousRecurring
           ? [from]
           : []
-      for (const date of dates) result.push({ date, amount: segment.amount, currency: segment.currency })
+      for (const date of dates)
+        if (!isPausedOn(item, date)) result.push({ date, amount: segment.amount, currency: segment.currency })
     }
     previousRecurring = !!months
   }

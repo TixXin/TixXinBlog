@@ -21,6 +21,8 @@ export function useSubscriptionEstimate(options: {
   const repo = useSubscriptionRepository()
   const settings = ref<SubscriptionSettings | null>(null)
   const blogCurrencies = ref<CurrencyStats[] | null>(null)
+  /** 不分币种的全部公开记录，供年度账单折合 */
+  const blogRecords = ref<SubscriptionLike[]>([])
   // 估算是附加信息：只在客户端读取，失败时静默不显示，不影响预算与清单。
   onMounted(async () => {
     try {
@@ -28,6 +30,7 @@ export function useSubscriptionEstimate(options: {
       if (!settings.value.baseCurrency) return
       // 不带币种与筛选的全量统计，用于跨币种合计
       const all = await repo.stats({ page: 1, pageSize: 12 })
+      blogRecords.value = all.records ?? []
       blogCurrencies.value = all.records
         ? statistics(all.records, options.today.value, { rollForward: true }).currencies
         : all.currencies
@@ -57,5 +60,8 @@ export function useSubscriptionEstimate(options: {
     }
     return { base: value.base, monthly, missing, updatedAt: settings.value?.ratesUpdatedAt ?? null }
   })
-  return { config, estimate }
+  const allRecords = computed<readonly SubscriptionLike[]>(() =>
+    options.mode.value === 'blog' ? blogRecords.value : options.localItems.value,
+  )
+  return { config, estimate, allRecords }
 }

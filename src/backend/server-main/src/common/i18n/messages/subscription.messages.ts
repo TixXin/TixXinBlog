@@ -37,6 +37,10 @@ export const subscriptionMessages = defineMessages({
     zh: '结束日期不能早于订阅开始日期',
     en: 'The end date cannot be earlier than the subscription start date',
   },
+  'subscription.pausedPeriodsInvalid': {
+    zh: '暂停区间无效：每段须有开始日期、结束晚于开始，按时间先后且互不重叠，只有最后一段可以未结束，且不能早于订阅开始日期',
+    en: 'Invalid pause periods: each needs a start date and an end after it, in order without overlap; only the last may be open, and none may start before the subscription',
+  },
   'subscription.notFoundOrUnpublished': {
     zh: '订阅不存在或尚未公开',
     en: 'Subscription not found or not yet published',

@@ -21,6 +21,19 @@ import type {
 } from './subscription.dto'
 import { readSiteTimeZone } from '../site/site-time-zone'
 const publicSubscriptions = { status: 'published', deletedAt: null } as const
+/** 公开可见的可选字段；未填写统一为 null 或空数组 */
+function optionalFields(item: Subscription) {
+  return {
+    url: item.url ?? null,
+    platform: item.platform ?? null,
+    planName: item.planName ?? null,
+    startDate: item.startDate ?? null,
+    nextBillingDate: item.nextBillingDate ?? null,
+    trialEndDate: item.trialEndDate ?? null,
+    endDate: item.endDate ?? null,
+    pausedPeriods: item.pausedPeriods ?? [],
+  }
+}
 /** 计算日程与花费所需的公开字段 */
 function scheduleRecord(item: Subscription) {
   return {
@@ -35,6 +48,7 @@ function scheduleRecord(item: Subscription) {
     nextBillingDate: item.nextBillingDate ?? null,
     trialEndDate: item.trialEndDate ?? null,
     endDate: item.endDate ?? null,
+    pausedPeriods: item.pausedPeriods ?? [],
     priceHistory: item.priceHistory,
   }
 }
@@ -47,16 +61,11 @@ export class SubscriptionService {
       id: item.id,
       name: item.name,
       description: item.description,
-      url: item.url ?? null,
-      platform: item.platform ?? null,
+      ...optionalFields(item),
       category: item.category,
       currency: item.currency,
       amount: item.amount,
       billingCycle: item.billingCycle,
-      startDate: item.startDate ?? null,
-      nextBillingDate: item.nextBillingDate ?? null,
-      trialEndDate: item.trialEndDate ?? null,
-      endDate: item.endDate ?? null,
       subscriptionStatus: item.subscriptionStatus,
       iconUrl: item.iconMedia ? mediaUrl(item.iconMedia.id) : automaticIcon,
       faviconUrl: automaticIcon,
@@ -68,6 +77,7 @@ export class SubscriptionService {
           ...result,
           iconMediaId: item.iconMedia?.id ?? null,
           notes: item.notes,
+          paymentMethod: item.paymentMethod ?? null,
           status: item.status,
           sortOrder: item.sortOrder,
           revision: item.revision,

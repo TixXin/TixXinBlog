@@ -32,6 +32,8 @@ const expected = {
   nextBillingDate: '2026-11-01',
   trialEndDate: null,
   endDate: null,
+  pausedPeriods: [{ from: '2026-03-01', to: '2026-04-01' }],
+  planName: '家庭版',
   subscriptionStatus: 'active',
   iconUrl: '/api/v1/media/0e172e75-38de-4f32-b0de-c016e6e7de50.webp',
   faviconUrl: faviconUrl('cloud.example.test'),
@@ -53,6 +55,7 @@ function fixture() {
       description: '仅供管理的媒体说明',
     }),
     notes: '管理备注 private@example.test',
+    paymentMethod: '招行信用卡 尾号 0000',
     status: 'published',
     revision: 27,
     sortOrder: 80,
@@ -172,8 +175,8 @@ describe('订阅公开 GET 响应白名单', () => {
             ],
           },
         ],
-        // 累计花费：2026-01-01 起每月 1 日扣费，截至 10-18 共 10 笔
-        spending: [{ currency: 'USD', amount: 20000, unknownCount: 0, years: [{ year: 2026, amount: 20000 }] }],
+        // 累计花费：2026-01-01 起每月 1 日扣费，截至 10-18 共 10 笔，3 月暂停跳过 1 笔
+        spending: [{ currency: 'USD', amount: 18000, unknownCount: 0, years: [{ year: 2026, amount: 18000 }] }],
         priceChanges: [],
         // 供前端按当天重算的日程字段：只含公开字段，不带备注、发布状态、版本或提交身份
         records: [
@@ -189,6 +192,7 @@ describe('订阅公开 GET 响应白名单', () => {
             nextBillingDate: '2026-11-01',
             trialEndDate: null,
             endDate: null,
+            pausedPeriods: [{ from: '2026-03-01', to: '2026-04-01' }],
             priceHistory: history,
           },
         ],

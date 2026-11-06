@@ -2,7 +2,8 @@
 import { BadRequestException } from '@nestjs/common'
 import { msg } from '../../common/i18n'
 import { isIP } from 'node:net'
-import { isDate } from '@tixxin/subscription-domain'
+import { isDate, validatePausedPeriods } from '@tixxin/subscription-domain'
+import type { PausedPeriod } from '@tixxin/subscription-domain'
 import type { SaveSubscriptionDto } from './subscription.dto'
 export function subscriptionId(id: number) {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647)
@@ -40,17 +41,28 @@ export function faviconDomain(input: string): string {
     throw new BadRequestException(msg('subscription.faviconDomainInvalid'))
   return domain
 }
-type SubscriptionDates = Partial<Record<'startDate' | 'nextBillingDate' | 'trialEndDate' | 'endDate', string | null>>
+type SubscriptionDates = Partial<
+  Record<'startDate' | 'nextBillingDate' | 'trialEndDate' | 'endDate', string | null>
+> & {
+  pausedPeriods?: PausedPeriod[]
+}
 export function validateSubscriptionDates(value: SubscriptionDates) {
   for (const date of [value.startDate, value.nextBillingDate, value.trialEndDate, value.endDate])
     if (date !== undefined && date !== null && !isDate(date))
       throw new BadRequestException(msg('subscription.dateInvalid'))
-  if (value.startDate && value.nextBillingDate && value.nextBillingDate < value.startDate)
-    throw new BadRequestException(msg('subscription.nextBillingBeforeStart'))
-  if (value.startDate && value.trialEndDate && value.trialEndDate < value.startDate)
-    throw new BadRequestException(msg('subscription.trialEndBeforeStart'))
-  if (value.startDate && value.endDate && value.endDate < value.startDate)
-    throw new BadRequestException(msg('subscription.endBeforeStart'))
+  const start = value.startDate
+  for (const [date, key] of [
+    [value.nextBillingDate, 'subscription.nextBillingBeforeStart'],
+    [value.trialEndDate, 'subscription.trialEndBeforeStart'],
+    [value.endDate, 'subscription.endBeforeStart'],
+  ] as const)
+    if (start && date && date < start) throw new BadRequestException(msg(key))
+  if (value.pausedPeriods === undefined) return
+  try {
+    validatePausedPeriods(value.pausedPeriods, value.startDate ?? null)
+  } catch {
+    throw new BadRequestException(msg('subscription.pausedPeriodsInvalid'))
+  }
 }
 export function subscriptionValues(input: SaveSubscriptionDto) {
   const values = Object.fromEntries(
@@ -61,6 +73,10 @@ export function subscriptionValues(input: SaveSubscriptionDto) {
   if (values.url) values.url = subscriptionUrl(values.url)
   else if (values.url !== undefined) values.url = null
   if (values.platform !== undefined) values.platform = values.platform?.trim() || null
+  if (values.planName !== undefined) values.planName = values.planName?.trim() || null
+  if (values.paymentMethod !== undefined) values.paymentMethod = values.paymentMethod?.trim() || null
   validateSubscriptionDates(values)
+  // 区间规范化（缺省的 to 补为 null），保证存储与内容包哈希稳定
+  if (values.pausedPeriods !== undefined) values.pausedPeriods = validatePausedPeriods(values.pausedPeriods)
   return values
 }

@@ -21,6 +21,7 @@ import {
   BILLING_CYCLES,
   CURRENCIES,
   MAX_AMOUNT,
+  MAX_PAUSED_PERIODS,
   PUBLICATION_STATUSES,
   SUBSCRIPTION_CATEGORIES,
   SUBSCRIPTION_STATUSES,
@@ -28,6 +29,7 @@ import {
 import type {
   BillingCycle,
   Currency,
+  PausedPeriod,
   PublicationStatus,
   SubscriptionCategory,
   SubscriptionStatus,
@@ -65,6 +67,14 @@ export class SaveSubscriptionDto {
   @ValidateIf(nullable) @IsString() @MaxLength(10) nextBillingDate?: string | null
   @ValidateIf(nullable) @IsString() @MaxLength(10) trialEndDate?: string | null
   @ValidateIf(nullable) @IsString() @MaxLength(10) endDate?: string | null
+  // 区间的顺序、重叠与日期由领域规则在取值校验中检查
+  @ValidateIf(provided)
+  @IsArray()
+  @ArrayMaxSize(MAX_PAUSED_PERIODS)
+  @IsObject({ each: true })
+  pausedPeriods?: PausedPeriod[]
+  @ValidateIf(nullable) @IsString() @MaxUtf16Length(80) @Transform(trim) planName?: string | null
+  @ValidateIf(nullable) @IsString() @MaxUtf16Length(160) @Transform(trim) paymentMethod?: string | null
   @ValidateIf(provided) @IsIn(SUBSCRIPTION_STATUSES) subscriptionStatus?: SubscriptionStatus
   @ValidateIf(provided) @IsString() @MaxUtf16Length(5000) notes?: string
   @ValidateIf(nullable) @IsUUID('4') iconMediaId?: string | null

@@ -20,6 +20,12 @@
           {{ year }}
         </button>
       </div>
+      <p v-if="converted" class="subscription-annual__converted">
+        {{ $t('misc.subscription.annual.convertedTotal', { amount: formatAmount(converted.amount, converted.base) })
+        }}<span v-if="converted.missing.length">
+          · {{ $t('misc.subscription.annual.convertedMissing', { currencies: converted.missing.join(' / ') }) }}</span
+        >
+      </p>
       <p class="subscription-annual__total">
         <strong>{{ formatAmount(yearTotal, currency) }}</strong>
         <span>{{
@@ -57,8 +63,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import { charges, formatAmount } from '@tixxin/subscription-domain'
-import type { PriceChange, SubscriptionLike } from '@tixxin/subscription-domain'
+import { charges, convertAmount, formatAmount } from '@tixxin/subscription-domain'
+import type { Currency, PriceChange, RateConfig, SubscriptionLike } from '@tixxin/subscription-domain'
 import type { SubscriptionCurrency } from '~/features/subscription/types'
 
 const props = defineProps<{
@@ -66,6 +72,8 @@ const props = defineProps<{
   priceChanges: readonly PriceChange[]
   currency: SubscriptionCurrency
   today: string
+  allRecords?: readonly SubscriptionLike[]
+  rates?: RateConfig | null
 }>()
 /** 每条记录在当前币种下、有日期的扣费；缺日期无法估算的记录不计入 */
 const dated = computed(() =>
@@ -99,6 +107,26 @@ const ranking = computed(() => {
   }
   return [...rows.values()].sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
 })
+/** 选中年份全部币种的扣费按参考汇率折合到基准币种；未启用汇率时不显示 */
+const converted = computed(() => {
+  const rates = props.rates,
+    year = selectedYear.value
+  if (!rates || year === null || !props.allRecords?.length) return null
+  const totals = new Map<Currency, number>()
+  for (const record of props.allRecords)
+    for (const charge of charges(record, props.today) ?? [])
+      if (charge.date?.startsWith(`${year}-`))
+        totals.set(charge.currency, (totals.get(charge.currency) ?? 0) + charge.amount)
+  if (![...totals.keys()].some((code) => code !== props.currency)) return null
+  let amount = 0
+  const missing: Currency[] = []
+  for (const [code, value] of totals) {
+    const result = convertAmount(value, code, rates)
+    if (result === null) missing.push(code)
+    else amount += result
+  }
+  return { base: rates.base, amount, missing }
+})
 const yearChanges = computed(() =>
   props.priceChanges.filter(
     (change) => change.currency === props.currency && Number(change.date.slice(0, 4)) === selectedYear.value,
@@ -114,6 +142,11 @@ const yearChanges = computed(() =>
     margin: 0.2rem 0 0;
     font-size: 1.35rem;
   }
+}
+.subscription-annual__converted {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-soft);
 }
 .subscription-annual__eyebrow,
 .subscription-annual__note,

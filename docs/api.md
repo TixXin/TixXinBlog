@@ -321,7 +321,7 @@
 
 列表支持 `q/category/currency/subscriptionStatus/page/pageSize/sort`，默认每页 12、最大 48；管理端另有 `status=all|draft|published|withdrawn`。公开接口仅返回 published 且未删除记录，使用白名单排除管理备注、发布状态、revision 和提交身份。金额排序按币种分组，统计覆盖全部匹配记录，与分页无关。
 
-`amount` 为币种最小单位的非负整数，上限 2147483647；支持 CNY、USD、EUR、GBP、JPY、HKD、TWD。JPY 无小数位；不同币种从不直接合计。`billingCycle` 为 monthly/quarterly/semiannual/yearly/biennial/triennial/lifetime/one-time，`subscriptionStatus` 为 active/paused/cancelled/trial/expired，后者与发布 `status` 独立。active、已开始且未到 `endDate` 的周期付费记录进入当前预算，年化按 ×72 精确累加后取整；一次性、买断和其他状态不重复计费。日期为真实 `YYYY-MM-DD`，未知留 null；`trialEndDate`（试用到期即首次扣费）与 `endDate`（当天及之后不再扣费）均不能早于 `startDate`。读取从不回写日期。
+`amount` 为币种最小单位的非负整数，上限 2147483647；支持 CNY、USD、EUR、GBP、JPY、HKD、TWD。JPY 无小数位；不同币种从不直接合计。`billingCycle` 为 monthly/quarterly/semiannual/yearly/biennial/triennial/lifetime/one-time，`subscriptionStatus` 为 active/paused/cancelled/trial/expired，后者与发布 `status` 独立。active、已开始且未到 `endDate` 的周期付费记录进入当前预算，年化按 ×72 精确累加后取整；一次性、买断和其他状态不重复计费。日期为真实 `YYYY-MM-DD`，未知留 null；`trialEndDate`（试用到期即首次扣费）与 `endDate`（当天及之后不再扣费）均不能早于 `startDate`。`pausedPeriods` 为暂停区间数组（`[from, to)` 内的扣费日不计入预测与累计花费，`to` 为 null 表示仍在暂停，只有最后一段可以未结束，按先后排列、互不重叠、不早于 `startDate`，最多 50 段）；`planName` 为公开的套餐名（最多 80）；`paymentMethod` 为付款方式（最多 160），只在管理接口返回。读取从不回写日期。
 
 公开统计按站点时区的当天计算，预测与近期扣费把博主未及时更新的过去日期按周期推算到今天之后，不对访客报逾期；带 `trialEndDate` 的试用记录从到期日起进入预测并标记 `trial`。响应另含：`spending`（按扣费币种的累计花费估算与逐年金额，价格按 `priceHistory` 分段取当期价，缺少日期的记录计入 `unknownCount`）、`priceChanges`（同币种同周期的调价记录）以及 `records`（计算日程所需的公开字段，前端据此按访客当天重算，静态发布冻结接口后日期仍然正确）。
 

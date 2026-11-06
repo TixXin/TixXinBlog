@@ -1,6 +1,7 @@
 /** @file schedule.cjs @description 扣费日程：周期月数、锚点日、未来扣费推算、已发生扣费枚举与“已续费”推进 */
 'use strict'
 const { addDays, addMonths, monthIndex } = require('./dates.cjs')
+const { hasOpenPause, isPausedOn } = require('./pauses.cjs')
 
 const CYCLE_MONTHS = Object.freeze({ monthly: 1, quarterly: 3, semiannual: 6, yearly: 12, biennial: 24, triennial: 36 })
 function cycleMonths(cycle) {
@@ -40,7 +41,10 @@ function upcomingDates(item, today, end, limit = 16) {
   if (!months || !anchor) return []
   const from = item.startDate && item.startDate > today ? item.startDate : today
   const stop = item.endDate && item.endDate < end ? item.endDate : end
-  return datesBetween(anchor, months, anchorDay(item, anchor, months), from, stop, { limit })
+  // 暂停期间的扣费日跳过；多取一些再截断，避免暂停占满窗口时少算
+  return datesBetween(anchor, months, anchorDay(item, anchor, months), from, stop, { limit: limit * 4 })
+    .filter((date) => !isPausedOn(item, date))
+    .slice(0, limit)
 }
 /** 今天起的下一次扣费日；超过两个周期仍没有则视为无 */
 function nextChargeDate(item, today) {
@@ -75,7 +79,8 @@ function advanceBilling(item) {
 function chargeUntil(item, today) {
   const tomorrow = addDays(today, 1)
   let until = item.endDate || null
-  if (!until && ['active', 'trial'].includes(item.subscriptionStatus)) until = tomorrow
+  // 暂停中且记录了未结束的暂停区间：扣费到暂停开始为止，由区间过滤，截止到今天
+  if (!until && (['active', 'trial'].includes(item.subscriptionStatus) || hasOpenPause(item))) until = tomorrow
   if (!until) until = item.nextBillingDate || null
   if (!until) return null
   return until < tomorrow ? until : tomorrow

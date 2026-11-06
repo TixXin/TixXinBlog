@@ -639,18 +639,16 @@ const legacyV13 = (value: ContentPackage) => {
   // v19 才有的动态评论回复关系
   for (const note of copy.moments as { comments: Record<string, unknown>[] }[])
     for (const comment of note.comments) delete comment.replyToId
-  // v18 才有的订阅试用到期日与结束日
-  for (const item of copy.subscriptions as { values: Record<string, unknown> }[]) {
-    delete item.values.trialEndDate
-    delete item.values.endDate
-  }
+  // v18 才有的订阅试用到期日与结束日，v20 才有的暂停区间、套餐名与付款方式
+  for (const item of copy.subscriptions as { values: Record<string, unknown> }[])
+    for (const key of ['trialEndDate', 'endDate', 'pausedPeriods', 'planName', 'paymentMethod']) delete item.values[key]
   copy.version = 13
   return copy
 }
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
 
 describe('内容包导出特征', () => {
-  it('v19 导出的字节与读取顺序保持不变', async () => {
+  it('v20 导出的字节与读取顺序保持不变', async () => {
     const calls: Calls = []
     const { result, em } = await exportPackage(false, calls)
     expect(JSON.stringify(result)).toMatchSnapshot()
@@ -714,8 +712,8 @@ describe('内容包导出特征', () => {
 
 describe('内容包迁入计划特征', () => {
   it.each([
-    ['v19 跳过相同内容', false, 'skip', false],
-    ['v19 复制并包含设置', false, 'copy', true],
+    ['v20 跳过相同内容', false, 'skip', false],
+    ['v20 复制并包含设置', false, 'copy', true],
     ['v13 复制并包含设置', true, 'copy', true],
     ['v13 跳过且不含设置', true, 'skip', false],
   ] as const)('%s', async (_name, legacy, strategy, includeSettings) => {

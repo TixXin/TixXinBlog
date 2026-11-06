@@ -164,3 +164,37 @@ test('参考汇率严格校验并四舍五入换算到基准币种最小单位',
   assert.throws(() => validateRates({ base: 'CNY', rates: { CNY: '1' } }))
   assert.throws(() => validateRates({ base: 'XXX', rates: {} }))
 })
+
+test('暂停区间校验：递增、不重叠、只有最后一段可未结束、不早于开始日', () => {
+  const { validatePausedPeriods } = require('../index.cjs')
+  assert.deepEqual(validatePausedPeriods([{ from: '2026-03-01', to: '2026-05-01' }, { from: '2026-07-01' }]), [
+    { from: '2026-03-01', to: '2026-05-01' },
+    { from: '2026-07-01', to: null },
+  ])
+  for (const bad of [
+    [{ from: '2026-03-01', to: '2026-03-01' }],
+    [{ from: '2026-03-01', to: '2026-05-01' }, { from: '2026-04-01', to: '2026-06-01' }],
+    [{ from: '2026-03-01' }, { from: '2026-07-01', to: '2026-08-01' }],
+    [{ from: '2026-02-30' }],
+    [{ from: '2026-03-01', hidden: 1 }],
+  ])
+    assert.throws(() => validatePausedPeriods(bad), JSON.stringify(bad))
+  assert.throws(() => validatePausedPeriods([{ from: '2025-12-01' }], '2026-01-01'), /开始日期/)
+})
+
+test('暂停期间不计花费、不进预测；暂停中的记录花费截至暂停开始', () => {
+  const paused = item({
+    startDate: '2026-01-10',
+    pausedPeriods: [{ from: '2026-03-01', to: '2026-05-01' }],
+  })
+  assert.deepEqual(
+    charges(paused, '2026-06-10').map((charge) => charge.date),
+    ['2026-01-10', '2026-02-10', '2026-05-10', '2026-06-10'],
+  )
+  const open = item({ subscriptionStatus: 'paused', startDate: '2026-01-10', pausedPeriods: [{ from: '2026-04-01' }] })
+  assert.equal(charges(open, '2026-10-01').length, 3)
+  const future = item({ nextBillingDate: '2026-11-20', pausedPeriods: [{ from: '2026-12-01', to: '2027-02-01' }] })
+  const months = statistics([future], '2026-11-06').currencies[0].forecast.filter((p) => p.amount).map((p) => p.month)
+  assert.equal(months.includes('2026-12') || months.includes('2027-01'), false)
+  assert.equal(months.includes('2027-02'), true)
+})

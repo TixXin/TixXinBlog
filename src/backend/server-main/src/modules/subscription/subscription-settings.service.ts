@@ -12,6 +12,15 @@ import { buildCalendar } from './subscription-calendar'
 import type { SaveSubscriptionSettingsDto } from './subscription.dto'
 
 const ID = 'default'
+/** 日历 PRODID 与事件 UID 的域名：取站点地址（NOTIFICATION_SITE_URL），未配置或无效时用固定名 */
+export function calendarHost(siteUrl = process.env.NOTIFICATION_SITE_URL): string {
+  try {
+    const host = siteUrl ? new URL(siteUrl).hostname : ''
+    return /^[a-z0-9.-]+$/i.test(host) ? host.toLowerCase() : 'tixxin-blog'
+  } catch {
+    return 'tixxin-blog'
+  }
+}
 const hashToken = (token: string) => createHash('sha256').update(token, 'utf8').digest('hex')
 
 @Injectable()
@@ -111,8 +120,9 @@ export class SubscriptionSettingsService {
       nextBillingDate: item.nextBillingDate ?? null,
       trialEndDate: item.trialEndDate ?? null,
       endDate: item.endDate ?? null,
+      pausedPeriods: item.pausedPeriods ?? [],
       description: item.description,
     }))
-    return buildCalendar(records, todayDate(await readSiteTimeZone(this.em)), new Date(), 'tixxin-blog')
+    return buildCalendar(records, todayDate(await readSiteTimeZone(this.em)), new Date(), calendarHost())
   }
 }

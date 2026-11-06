@@ -3,6 +3,7 @@ import { Check, Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, U
 import type {
   BillingCycle,
   Currency,
+  PausedPeriod,
   PriceHistoryEntry,
   PublicationStatus,
   SubscriptionCategory,
@@ -23,6 +24,7 @@ export class Subscription {
     | 'subscriptionStatus'
     | 'notes'
     | 'priceHistory'
+    | 'pausedPeriods'
     | 'status'
     | 'sortOrder'
     | 'revision'
@@ -43,6 +45,12 @@ export class Subscription {
   @Property({ type: 'date', nullable: true }) trialEndDate?: string | null
   /** 服务结束日：当天及之后不再扣费 */
   @Property({ type: 'date', nullable: true }) endDate?: string | null
+  /** 暂停区间：[from, to) 内不扣费，to 为 null 表示仍在暂停 */
+  @Property({ type: 'json', defaultRaw: "'[]'::jsonb" }) pausedPeriods: PausedPeriod[] = []
+  /** 套餐名（如“家庭版”“Plus”），公开展示 */
+  @Property({ type: 'text', nullable: true }) planName?: string | null
+  /** 付款方式（如“招行信用卡”），只在后台可见，不进入公开接口 */
+  @Property({ type: 'text', nullable: true }) paymentMethod?: string | null
   @Property({ type: 'text', default: 'active' }) subscriptionStatus: SubscriptionStatus = 'active'
   @Property({ type: 'text', default: '' }) notes = ''
   @ManyToOne({ entity: () => MediaAsset, nullable: true, deleteRule: 'restrict' }) iconMedia?: MediaAsset | null

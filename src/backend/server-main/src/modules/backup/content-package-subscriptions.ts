@@ -1,9 +1,10 @@
-/** @file content-package-subscriptions.ts @description v11 起的订阅格式严格校验，保存价格事实并拒绝管理身份与伪造缓存来源；v18 起携带试用到期日与结束日。 */
+/** @file content-package-subscriptions.ts @description v11 起的订阅格式严格校验，保存价格事实并拒绝管理身份与伪造缓存来源；v18 起携带试用到期日与结束日；v20 起携带暂停区间、套餐名与付款方式。 */
 import { BadRequestException } from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { isISO8601, validateSync } from 'class-validator'
 import { validatePriceHistory } from '@tixxin/subscription-domain'
 import type {
+  PausedPeriod,
   PriceHistoryEntry,
   Pricing,
   PublicationStatus,
@@ -29,6 +30,9 @@ export interface PackageSubscription {
     nextBillingDate: string | null
     trialEndDate: string | null
     endDate: string | null
+    pausedPeriods: PausedPeriod[]
+    planName: string | null
+    paymentMethod: string | null
     subscriptionStatus: SubscriptionStatus
     notes: string
     iconMediaId: string | null
@@ -41,6 +45,17 @@ export interface PackageSubscription {
 /** 订阅 values 携带 trialEndDate、endDate 的首个内容包版本；更早版本出现即按未知字段拒绝 */
 export const SUBSCRIPTION_SCHEDULE_VERSION = 18
 const scheduleKeys = ['trialEndDate', 'endDate']
+/** 订阅 values 携带暂停区间、套餐名与付款方式的首个内容包版本 */
+export const SUBSCRIPTION_PLAN_VERSION = 20
+const planKeys = ['pausedPeriods', 'planName', 'paymentMethod']
+/** 该版本订阅 values 允许且必须携带的字段 */
+function subscriptionKeys(version: number) {
+  return [
+    ...valueKeys,
+    ...(version >= SUBSCRIPTION_SCHEDULE_VERSION ? scheduleKeys : []),
+    ...(version >= SUBSCRIPTION_PLAN_VERSION ? planKeys : []),
+  ]
+}
 const valueKeys = [
   'name',
   'description',
@@ -88,12 +103,24 @@ function sourceId(value: unknown, seen: Set<number>, path: string): number {
   seen.add(id)
   return id
 }
-/** 旧版本没有试用到期日与结束日，规范为 null，使新旧包与现有记录的内容哈希可比 */
-function scheduleDates(values: { trialEndDate?: string | null; endDate?: string | null }) {
-  return { trialEndDate: values.trialEndDate ?? null, endDate: values.endDate ?? null }
+/** 旧版本没有的后加字段补为缺省值，使新旧包与现有记录的内容哈希可比 */
+function laterFields(values: {
+  trialEndDate?: string | null
+  endDate?: string | null
+  pausedPeriods?: PausedPeriod[]
+  planName?: string | null
+  paymentMethod?: string | null
+}) {
+  return {
+    trialEndDate: values.trialEndDate ?? null,
+    endDate: values.endDate ?? null,
+    pausedPeriods: values.pausedPeriods ?? [],
+    planName: values.planName ?? null,
+    paymentMethod: values.paymentMethod ?? null,
+  }
 }
 export function parsePackageSubscriptions(input: unknown, version: number): PackageSubscription[] {
-  const keys = version >= SUBSCRIPTION_SCHEDULE_VERSION ? [...valueKeys, ...scheduleKeys] : valueKeys
+  const keys = subscriptionKeys(version)
   if (!Array.isArray(input) || input.length > 3000) return fail('subscriptions')
   const seen = new Set<number>()
   return input.map((value, index): PackageSubscription => {
@@ -124,7 +151,7 @@ export function parsePackageSubscriptions(input: unknown, version: number): Pack
       deleted: row.deleted,
       values: {
         ...normalized,
-        ...scheduleDates(normalized),
+        ...laterFields(normalized),
         iconMediaId: normalized.iconMediaId?.toLowerCase() ?? null,
         priceHistory: history,
         faviconDomain: domain,

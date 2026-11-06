@@ -111,6 +111,8 @@
           :renewal-day-hint="renewalDayHint"
           :overdue-count="overdueCount"
           :records="records"
+          :all-records="allRecords"
+          :rates="rates"
           :today="stats.asOf"
         />
         <ClientOnly>
@@ -182,6 +184,7 @@ const {
   records,
   rates,
   estimate,
+  allRecords,
   total,
   items,
   currency,

@@ -12,6 +12,7 @@ import type {
   SubscriptionCategory as DomainCategory,
   SubscriptionStatus,
   PublicationStatus,
+  PausedPeriod,
   PriceHistoryEntry,
   RateConfig,
   SubscriptionLike,
@@ -48,6 +49,10 @@ export interface SubscriptionFields {
   trialEndDate: string | null
   /** 服务结束日：当天及之后不再扣费 */
   endDate: string | null
+  /** 暂停区间：[from, to) 内不扣费 */
+  pausedPeriods: PausedPeriod[]
+  /** 套餐名，公开展示 */
+  planName: string | null
   subscriptionStatus: SubscriptionState
 }
 export interface SubscriptionItem extends SubscriptionFields {
@@ -59,6 +64,8 @@ export interface SubscriptionItem extends SubscriptionFields {
 }
 export interface SubscriptionEditable extends SubscriptionFields {
   notes: string
+  /** 付款方式：只在后台与本机可见 */
+  paymentMethod: string | null
   iconMediaId: string | null
   status: SubscriptionPublication
   sortOrder: number

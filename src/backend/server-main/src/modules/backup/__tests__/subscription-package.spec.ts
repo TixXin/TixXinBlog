@@ -2,8 +2,14 @@
 import 'reflect-metadata'
 import { parseContentPackage } from '../content-package'
 import { subscriptionContentHash } from '../content-import-plan'
-import { parsePackageSubscriptions, SUBSCRIPTION_SCHEDULE_VERSION } from '../content-package-subscriptions'
+import {
+  parsePackageSubscriptions,
+  SUBSCRIPTION_PLAN_VERSION,
+  SUBSCRIPTION_SCHEDULE_VERSION,
+} from '../content-package-subscriptions'
 
+/** v20 才有的字段的缺省值 */
+const LATER = { pausedPeriods: [], planName: null, paymentMethod: null }
 /** 不含试用到期日与结束日的旧格式版本 */
 const LEGACY = SUBSCRIPTION_SCHEDULE_VERSION - 1
 
@@ -81,9 +87,19 @@ const parse = (input: unknown) => parseContentPackage(Buffer.from(JSON.stringify
 describe('平台订阅内容包 v11', () => {
   it('保存价格事实和管理备注，开始日期不会伪造更早的历史价格', async () => {
     const parsed = await parse(bundle())
-    expect(parsed.version).toBe(19)
+    expect(parsed.version).toBe(20)
     expect(parsed.subscriptions).toEqual([
-      { ...subscription(), values: { ...subscription().values, trialEndDate: null, endDate: null } },
+      {
+        ...subscription(),
+        values: {
+          ...subscription().values,
+          trialEndDate: null,
+          endDate: null,
+          pausedPeriods: [],
+          planName: null,
+          paymentMethod: null,
+        },
+      },
     ])
     expect(parsed.subscriptions[0]?.values.priceHistory[0]?.effectiveAt).toBe('2026-10-01T10:00:00.000Z')
   })
@@ -200,7 +216,7 @@ describe('平台订阅内容包 v11', () => {
     )
   })
   it('去重包含历史和业务状态；发布状态与可再生缓存不造成重复迁入', () => {
-    const values = { ...subscription().values, trialEndDate: null, endDate: null }
+    const values = { ...subscription().values, trialEndDate: null, endDate: null, ...LATER }
     expect(subscriptionContentHash(values)).toBe(
       subscriptionContentHash({ ...values, status: 'draft', faviconDomain: 'example.org' }),
     )
@@ -212,7 +228,7 @@ describe('平台订阅内容包 v11', () => {
     )
   })
   it('去重区分试用到期日与结束日', () => {
-    const values = { ...subscription().values, trialEndDate: null, endDate: null }
+    const values = { ...subscription().values, trialEndDate: null, endDate: null, ...LATER }
     expect(subscriptionContentHash(values)).not.toBe(subscriptionContentHash({ ...values, endDate: '2026-12-31' }))
   })
 })
@@ -249,4 +265,58 @@ describe('平台订阅内容包 v18 日程字段', () => {
       )
     }
   })
+})
+
+describe('平台订阅内容包 v20 暂停区间、套餐名与付款方式', () => {
+  const planned = (patch: Record<string, unknown> = {}) => [
+    {
+      ...subscription(),
+      values: {
+        ...subscription().values,
+        trialEndDate: null,
+        endDate: null,
+        pausedPeriods: [{ from: '2026-03-01', to: '2026-04-01' }],
+        planName: '家庭版',
+        paymentMethod: '信用卡',
+        ...patch,
+      },
+    },
+  ]
+  it('v20 必须携带三个字段并原样保留，缺省 to 规范为 null', () => {
+    const [parsed] = parsePackageSubscriptions(
+      planned({ pausedPeriods: [{ from: '2026-03-01' }] }),
+      SUBSCRIPTION_PLAN_VERSION,
+    )
+    expect(parsed?.values).toMatchObject({
+      pausedPeriods: [{ from: '2026-03-01', to: null }],
+      planName: '家庭版',
+      paymentMethod: '信用卡',
+    })
+    expect(() => parsePackageSubscriptions(scheduledOnly(), SUBSCRIPTION_PLAN_VERSION)).toThrow()
+  })
+  it('更早版本夹带新字段拒绝，缺省时补为空', () => {
+    expect(() => parsePackageSubscriptions(planned(), SUBSCRIPTION_SCHEDULE_VERSION)).toThrow()
+    expect(parsePackageSubscriptions(scheduledOnly(), SUBSCRIPTION_SCHEDULE_VERSION)[0]?.values).toMatchObject({
+      pausedPeriods: [],
+      planName: null,
+      paymentMethod: null,
+    })
+  })
+  it.each([
+    { pausedPeriods: [{ from: '2019-12-01' }] },
+    { pausedPeriods: [{ from: '2026-03-01' }, { from: '2026-05-01' }] },
+    { pausedPeriods: 'x' },
+    { planName: 'x'.repeat(81) },
+  ])('拒绝非法值 %j', (patch) => {
+    expect(() => parsePackageSubscriptions(planned(patch), SUBSCRIPTION_PLAN_VERSION)).toThrow()
+  })
+  it('去重区分暂停区间与套餐名', () => {
+    const [parsed] = parsePackageSubscriptions(planned(), SUBSCRIPTION_PLAN_VERSION)
+    const values = parsed!.values
+    expect(subscriptionContentHash(values)).not.toBe(subscriptionContentHash({ ...values, pausedPeriods: [] }))
+    expect(subscriptionContentHash(values)).not.toBe(subscriptionContentHash({ ...values, planName: null }))
+  })
+  function scheduledOnly() {
+    return [{ ...subscription(), values: { ...subscription().values, trialEndDate: null, endDate: null } }]
+  }
 })

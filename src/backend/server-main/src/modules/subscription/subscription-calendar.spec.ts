@@ -1,6 +1,7 @@
 /** @file subscription-calendar.spec.ts @description 续费日历的 RFC 5545 转义、折行与事件生成 */
 import { buildCalendar, escapeText, foldLine } from './subscription-calendar'
 import type { CalendarRecord } from './subscription-calendar'
+import { calendarHost } from './subscription-settings.service'
 
 const record = (overrides: Partial<CalendarRecord> = {}): CalendarRecord => ({
   id: 7,
@@ -65,5 +66,10 @@ describe('续费日历', () => {
     expect(text).toContain('UID:subscription-1-20261120@host')
     expect(text).not.toContain('UID:subscription-2-')
     expect(text).not.toContain('UID:subscription-3-')
+  })
+  it('日历域名取站点地址，未配置或无效时回退固定名', () => {
+    expect(calendarHost('https://Blog.Example.com/path')).toBe('blog.example.com')
+    expect(calendarHost(undefined)).toBe('tixxin-blog')
+    expect(calendarHost('not a url')).toBe('tixxin-blog')
   })
 })

@@ -586,7 +586,11 @@
         "spentUnknown": "No start date, cannot estimate",
         "spentNone": "No charges yet",
         "spentValue": "About {amount} ({count} charge) | About {amount} ({count} charges)",
-        "renew": "Renewed — move to {date}"
+        "renew": "Renewed — move to {date}",
+        "planName": "Plan",
+        "paymentMethod": "Payment method",
+        "pausedPeriods": "Paused",
+        "pauseOngoing": "now"
       },
       "filters": {
         "search": "Search subscriptions",
@@ -718,7 +722,17 @@
         "sortOrder": "Sort order (higher comes first)",
         "sortOrderLabel": "Subscription sort order",
         "trialEndDate": "Trial ends (first charge)",
-        "endDate": "End date"
+        "endDate": "End date",
+        "planName": "Plan",
+        "planNamePlaceholder": "e.g. Family, Plus",
+        "paymentMethod": "Payment method (private)",
+        "paymentMethodPlaceholder": "e.g. credit card, PayPal",
+        "pausedPeriods": "Pause periods",
+        "addPause": "Add pause",
+        "pauseFrom": "Pause {index} starts",
+        "pauseTo": "Pause {index} resumes",
+        "removePause": "Remove pause {index}",
+        "pauseNote": "Billing dates during a pause don't count toward spending or forecasts. Leave the resume date empty while still paused; only the last pause may be open."
       },
       "editor": {
         "editTitle": "Edit subscription",
@@ -791,7 +805,8 @@
         "trialEndBeforeStart": "The trial end date cannot be earlier than the start date",
         "endBeforeStart": "The end date cannot be earlier than the start date",
         "renewed": "Renewed. Next billing moved to {date}",
-        "renewWhileEditing": "This subscription has unsaved edits. Save or cancel them before marking it renewed."
+        "renewWhileEditing": "This subscription has unsaved edits. Save or cancel them before marking it renewed.",
+        "pausesInvalid": "Invalid pause periods: each needs a start date and a resume date after it, in order without overlap, not before the subscription starts"
       },
       "repository": {
         "unavailable": "The subscription service is temporarily unavailable. Please try again later",
@@ -824,7 +839,8 @@
         "nextBeforeStart": "Next billing can't be earlier than the subscription start date",
         "trialEndBeforeStart": "The trial end date cannot be earlier than the start date",
         "endBeforeStart": "The end date cannot be earlier than the start date",
-        "ratesInvalid": "Invalid reference rate: use a number above 0 with at most 8 decimals"
+        "ratesInvalid": "Invalid reference rate: use a number above 0 with at most 8 decimals",
+        "pausesInvalid": "Invalid pause periods: each needs a start date and a resume date after it, in order without overlap, not before the subscription starts"
       },
       "annual": {
         "label": "{currency} annual bill",
@@ -838,7 +854,9 @@
         "changesLabel": "Price changes this year",
         "changesTitle": "Price changes",
         "noChanges": "No price changes this year",
-        "note": "Estimated up to {asOf} from start dates, trial end dates and price history. Paused periods are unknown, so treat this as a rough guide."
+        "note": "Estimated up to {asOf} from start dates, trial end dates and price history. Paused periods are unknown, so treat this as a rough guide.",
+        "convertedTotal": "All currencies this year: about {amount} (reference-rate estimate)",
+        "convertedMissing": "{currencies} have no rate and are not counted"
       }
     },
     "tab": {

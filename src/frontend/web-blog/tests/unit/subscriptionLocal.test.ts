@@ -445,3 +445,33 @@ describe('访客订阅的试用到期、结束日与一键续费', () => {
     expect(local.form.name).toBe('改到一半')
   })
 })
+
+describe('访客订阅的暂停区间、套餐名与付款方式', () => {
+  it('保存并刷新保留三个字段，非法暂停区间拒绝且不写入', async () => {
+    const local = await setup()
+    local.edit()
+    Object.assign(local.form, {
+      name: '视频会员',
+      currency: 'CNY',
+      amountInput: '25',
+      startDate: '2026-01-05',
+      planName: '家庭版',
+      paymentMethod: '信用卡',
+      pausedPeriods: [{ from: '2026-03-01', to: '2026-05-01' }],
+    })
+    await local.save()
+    expect(local.error.value).toBe('')
+    wrappers.pop()!.unmount()
+    const reopened = await setup()
+    expect(reopened.data.value.items[0]).toMatchObject({
+      planName: '家庭版',
+      paymentMethod: '信用卡',
+      pausedPeriods: [{ from: '2026-03-01', to: '2026-05-01' }],
+    })
+    reopened.edit(reopened.data.value.items[0]!)
+    reopened.form.pausedPeriods = [{ from: '2025-12-01', to: null }]
+    await reopened.save()
+    expect(reopened.error.value).toContain('暂停区间无效')
+    expect(reopened.data.value.items[0]!.pausedPeriods).toEqual([{ from: '2026-03-01', to: '2026-05-01' }])
+  })
+})

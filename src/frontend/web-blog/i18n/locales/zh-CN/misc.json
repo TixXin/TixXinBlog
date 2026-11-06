@@ -586,7 +586,11 @@
         "spentUnknown": "缺少开始日期，无法估算",
         "spentNone": "尚无扣费",
         "spentValue": "约 {amount}（{count} 次扣费）",
-        "renew": "已续费，下次改为 {date}"
+        "renew": "已续费，下次改为 {date}",
+        "planName": "套餐",
+        "paymentMethod": "付款方式",
+        "pausedPeriods": "暂停",
+        "pauseOngoing": "至今"
       },
       "filters": {
         "search": "搜索订阅",
@@ -718,7 +722,17 @@
         "sortOrder": "排序值（越大越靠前）",
         "sortOrderLabel": "订阅排序值",
         "trialEndDate": "试用到期（首次扣费）",
-        "endDate": "结束日期"
+        "endDate": "结束日期",
+        "planName": "套餐名",
+        "planNamePlaceholder": "例如 家庭版、Plus",
+        "paymentMethod": "付款方式（不公开）",
+        "paymentMethodPlaceholder": "例如 招行信用卡、支付宝",
+        "pausedPeriods": "暂停区间",
+        "addPause": "添加暂停",
+        "pauseFrom": "第 {index} 段暂停开始",
+        "pauseTo": "第 {index} 段恢复日期",
+        "removePause": "删除第 {index} 段暂停",
+        "pauseNote": "暂停期间的扣费日不计入累计花费与预测；恢复日期留空表示仍在暂停，只有最后一段可以留空。"
       },
       "editor": {
         "editTitle": "编辑订阅",
@@ -791,7 +805,8 @@
         "trialEndBeforeStart": "试用到期日期不能早于订阅开始日期",
         "endBeforeStart": "结束日期不能早于订阅开始日期",
         "renewed": "已续费，下次扣费改为 {date}",
-        "renewWhileEditing": "这条订阅有未保存的编辑，请先保存或取消再标记续费"
+        "renewWhileEditing": "这条订阅有未保存的编辑，请先保存或取消再标记续费",
+        "pausesInvalid": "暂停区间无效：每段要有开始日期，恢复晚于开始，按先后排列且不重叠，不早于订阅开始日期"
       },
       "repository": {
         "unavailable": "订阅服务暂时不可用，请稍后重试",
@@ -824,7 +839,8 @@
         "nextBeforeStart": "下次扣费不能早于订阅开始日期",
         "trialEndBeforeStart": "试用到期日期不能早于订阅开始日期",
         "endBeforeStart": "结束日期不能早于订阅开始日期",
-        "ratesInvalid": "参考汇率无效：汇率须大于 0，最多 8 位小数"
+        "ratesInvalid": "参考汇率无效：汇率须大于 0，最多 8 位小数",
+        "pausesInvalid": "暂停区间无效：每段要有开始日期，恢复晚于开始，按先后排列且不重叠，不早于订阅开始日期"
       },
       "annual": {
         "label": "{currency} 年度账单",
@@ -838,7 +854,9 @@
         "changesLabel": "当年调价记录",
         "changesTitle": "当年调价",
         "noChanges": "当年没有调价",
-        "note": "按开始日、试用到期日与价格历史推算到 {asOf}；暂停期间无法得知，按记录日期估算，仅供参考。"
+        "note": "按开始日、试用到期日与价格历史推算到 {asOf}；暂停期间无法得知，按记录日期估算，仅供参考。",
+        "convertedTotal": "全部币种当年折合约 {amount}（参考汇率估算）",
+        "convertedMissing": "{currencies} 未填汇率，未计入"
       }
     },
     "tab": {

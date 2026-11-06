@@ -37,8 +37,14 @@ export interface SubscriptionLike extends Pricing {
   trialEndDate?: string | null
   /** 服务结束日：当天及之后不再扣费 */
   endDate?: string | null
+  /** 暂停区间：[from, to) 内不扣费，to 为 null 表示仍在暂停 */
+  pausedPeriods?: readonly PausedPeriod[]
   /** 价格历史；缺省时累计花费按当前价格估算 */
   priceHistory?: readonly PriceHistoryEntry[]
+}
+export interface PausedPeriod {
+  from: string
+  to: string | null
 }
 export interface UpcomingPayment {
   id: string | number
@@ -136,6 +142,10 @@ export function advanceBilling(record: SubscriptionLike): string | null
 /** 截至今天的扣费估算；缺少日期无法估算时为 null */
 export function charges(record: SubscriptionLike, today: string): Charge[] | null
 export function priceChanges(record: SubscriptionLike): PriceChange[]
+export const MAX_PAUSED_PERIODS: number
+/** 校验暂停区间并返回规范化副本：递增、互不重叠、只有最后一段可未结束、不早于开始日 */
+export function validatePausedPeriods(periods: unknown, startDate?: string | null): PausedPeriod[]
+export function isPausedOn(record: SubscriptionLike, date: string): boolean
 export function parseRate(input: string): bigint
 export function validateRates(value: unknown): RateConfig
 export function convertAmount(amount: number, currency: Currency, config: RateConfig | null): number | null

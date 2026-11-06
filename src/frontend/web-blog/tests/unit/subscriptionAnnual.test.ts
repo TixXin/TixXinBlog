@@ -90,3 +90,29 @@ describe('年度账单', () => {
     expect(wrapper.find('.subscription-annual__changes .is-up').exists()).toBe(false)
   })
 })
+
+describe('年度账单的跨币种折合', () => {
+  it('有参考汇率时按年折合全部币种，缺汇率的币种单独列出', async () => {
+    const wrapper = await mountSuspended(Annual, {
+      props: {
+        records: records.filter((record) => record.currency === 'USD'),
+        priceChanges: changes,
+        currency: 'USD',
+        today: '2026-06-15',
+        allRecords: [...records, { ...records[2]!, id: 4, name: '欧元服务', currency: 'EUR', amount: 100 }],
+        rates: { base: 'CNY', rates: { USD: '7' } },
+      },
+    })
+    await flushPromises()
+    // 2026 年 USD 147.00 × 7 = 1029.00，CNY 6 × 9.00 = 54.00；EUR 无汇率
+    const line = wrapper.find('.subscription-annual__converted').text()
+    expect(line).toContain('CNY 1,083.00')
+    expect(line).toContain('EUR')
+  })
+  it('未启用汇率或只有单一币种时不显示折合', async () => {
+    const wrapper = await mountSuspended(Annual, {
+      props: { records, priceChanges: changes, currency: 'USD', today: '2026-06-15', allRecords: records, rates: null },
+    })
+    expect(wrapper.find('.subscription-annual__converted').exists()).toBe(false)
+  })
+})

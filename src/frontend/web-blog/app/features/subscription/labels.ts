@@ -48,6 +48,9 @@ const DOMAIN_ERRORS: Record<string, string> = {
   基准币种无效: 'ratesInvalid',
   汇率币种无效: 'ratesInvalid',
   折合金额超出安全范围: 'statsOverflow',
+  暂停区间无效: 'pausesInvalid',
+  暂停不能早于订阅开始日期: 'pausesInvalid',
+  暂停区间顺序或重叠无效: 'pausesInvalid',
 }
 
 /**

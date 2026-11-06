@@ -4,6 +4,7 @@ const { isDate, todayDate, addMonths, addDays, monthIndex } = require('./dates.c
 const schedule = require('./schedule.cjs')
 const { charges, priceChanges, spendingSummary } = require('./spending.cjs')
 const rates = require('./rates.cjs')
+const pauses = require('./pauses.cjs')
 
 const CURRENCY_DIGITS = Object.freeze({ CNY: 2, USD: 2, EUR: 2, GBP: 2, JPY: 0, HKD: 2, TWD: 2 })
 const CURRENCIES = Object.freeze(Object.keys(CURRENCY_DIGITS))
@@ -166,6 +167,7 @@ function validateRecord(item) {
     throw new RangeError('试用到期不能早于订阅开始日期')
   if (item.startDate && item.endDate && item.endDate < item.startDate)
     throw new RangeError('结束日期不能早于订阅开始日期')
+  pauses.validatePausedPeriods(item.pausedPeriods, item.startDate)
 }
 function createBucket(currency, firstMonth) {
   return {
@@ -319,3 +321,6 @@ exports.priceChanges = priceChanges
 exports.parseRate = rates.parseRate
 exports.validateRates = validateRates
 exports.convertAmount = convertAmount
+exports.MAX_PAUSED_PERIODS = pauses.MAX_PAUSED_PERIODS
+exports.validatePausedPeriods = pauses.validatePausedPeriods
+exports.isPausedOn = pauses.isPausedOn

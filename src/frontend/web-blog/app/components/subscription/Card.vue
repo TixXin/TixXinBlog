@@ -29,7 +29,9 @@
         >
           <span class="subscription-list-name">{{ item.name }}</span>
         </button>
-        <span class="subscription-list-category">{{ categoryLabel(item.category, t) }}</span>
+        <span class="subscription-list-category"
+          >{{ categoryLabel(item.category, t) }}<template v-if="item.planName"> · {{ item.planName }}</template></span
+        >
       </span>
       <span :id="`${rowId}-price`" class="subscription-list-price">
         <strong>{{ formatAmount(item.amount, item.currency) }}</strong>

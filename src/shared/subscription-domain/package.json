@@ -11,7 +11,8 @@
     "dates.cjs",
     "schedule.cjs",
     "spending.cjs",
-    "rates.cjs"
+    "rates.cjs",
+    "pauses.cjs"
   ],
   "scripts": {
     "test": "node --test test/*.test.cjs"

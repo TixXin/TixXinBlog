@@ -20,6 +20,15 @@
           :aria-label="$t('misc.subscription.fields.platform')"
           @input="change('platform', input($event) || null)"
       /></label>
+      <label
+        >{{ $t('misc.subscription.fields.planName')
+        }}<input
+          :value="value.planName ?? ''"
+          maxlength="80"
+          :placeholder="$t('misc.subscription.fields.planNamePlaceholder')"
+          :aria-label="$t('misc.subscription.fields.planName')"
+          @input="change('planName', input($event) || null)"
+      /></label>
     </div>
     <label
       >{{ managed ? $t('misc.subscription.fields.publicDescription') : $t('misc.subscription.fields.description')
@@ -133,6 +142,11 @@
       /></label>
     </div>
     <p class="subscription-note">{{ $t('misc.subscription.fields.dateNote') }}</p>
+    <SubscriptionPausedPeriodsField
+      :periods="value.pausedPeriods"
+      :start-date="value.startDate"
+      @change="change('pausedPeriods', $event)"
+    />
     <label v-if="changed"
       >{{ $t('misc.subscription.fields.priceChangeReason')
       }}<textarea
@@ -145,6 +159,15 @@
       />
     </label>
     <p v-if="changed" class="subscription-note">{{ $t('misc.subscription.fields.priceChangeNote') }}</p>
+    <label
+      >{{ $t('misc.subscription.fields.paymentMethod')
+      }}<input
+        :value="value.paymentMethod ?? ''"
+        maxlength="160"
+        :placeholder="$t('misc.subscription.fields.paymentMethodPlaceholder')"
+        :aria-label="$t('misc.subscription.fields.paymentMethod')"
+        @input="change('paymentMethod', input($event) || null)"
+    /></label>
     <label
       >{{ managed ? $t('misc.subscription.fields.managedNotes') : $t('misc.subscription.fields.localNotes')
       }}<textarea

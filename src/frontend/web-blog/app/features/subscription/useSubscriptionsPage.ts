@@ -54,7 +54,11 @@ export function useSubscriptionsPage(
   const records = computed(() =>
     mode.value === 'blog' ? (blogStats.value?.records ?? []) : local.ready.value ? localFiltered.value : [],
   )
-  const { config: rates, estimate } = useSubscriptionEstimate({
+  const {
+    config: rates,
+    estimate,
+    allRecords,
+  } = useSubscriptionEstimate({
     mode,
     localItems: computed(() => (local.ready.value ? local.data.value.items : [])),
     today,
@@ -211,6 +215,7 @@ export function useSubscriptionsPage(
     records,
     rates,
     estimate,
+    allRecords,
     total,
     items,
     currency,

@@ -16,6 +16,9 @@ export function subscriptionForm(value?: Partial<SubscriptionEditable> & Partial
     nextBillingDate: value?.nextBillingDate ?? null,
     trialEndDate: value?.trialEndDate ?? null,
     endDate: value?.endDate ?? null,
+    pausedPeriods: (value?.pausedPeriods ?? []).map((period) => ({ from: period.from, to: period.to ?? null })),
+    planName: value?.planName ?? null,
+    paymentMethod: value?.paymentMethod ?? null,
     subscriptionStatus: value?.subscriptionStatus ?? 'active',
     notes: value?.notes ?? '',
     iconMediaId: value?.iconMediaId ?? null,
@@ -51,7 +54,13 @@ export function validSubscriptionForm(value: unknown): value is SubscriptionForm
       (field) => field === null || typeof field === 'string',
     ) &&
     // 试用到期与结束日为后加字段，旧恢复副本缺省视为未填写
-    [v.trialEndDate, v.endDate].every((field) => field === undefined || field === null || typeof field === 'string') &&
+    [v.trialEndDate, v.endDate, v.planName, v.paymentMethod].every(
+      (field) => field === undefined || field === null || typeof field === 'string',
+    ) &&
+    (v.pausedPeriods === undefined ||
+      (Array.isArray(v.pausedPeriods) &&
+        v.pausedPeriods.length <= 50 &&
+        v.pausedPeriods.every((period) => period && typeof period.from === 'string'))) &&
     (v.priceChangeReason === undefined || typeof v.priceChangeReason === 'string')
   )
 }

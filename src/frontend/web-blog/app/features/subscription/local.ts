@@ -3,6 +3,7 @@ import {
   advanceBilling,
   appendPriceHistory,
   isDate,
+  validatePausedPeriods,
   validatePricing,
   validatePriceHistory,
 } from '@tixxin/subscription-domain'
@@ -71,6 +72,16 @@ export function validateLocalFields(value: SubscriptionEditable) {
   if (value.startDate && value.trialEndDate && value.trialEndDate < value.startDate)
     throw localError('trialEndBeforeStart')
   if (value.startDate && value.endDate && value.endDate < value.startDate) throw localError('endBeforeStart')
+  if (
+    (value.planName !== null && (typeof value.planName !== 'string' || value.planName.length > 80)) ||
+    (value.paymentMethod !== null && (typeof value.paymentMethod !== 'string' || value.paymentMethod.length > 160))
+  )
+    throw localError('fieldsInvalid')
+  try {
+    validatePausedPeriods(value.pausedPeriods, value.startDate)
+  } catch {
+    throw localError('pausesInvalid')
+  }
   if (value.priceChangeReason && value.priceChangeReason.length > 500) throw localError('reasonTooLong', { max: 500 })
 }
 export function parseLocalSubscriptions(raw: string | null, now = new Date().toISOString()): LocalSubscriptions {
@@ -89,8 +100,15 @@ export function parseLocalSubscriptions(raw: string | null, now = new Date().toI
     const items = envelope.items.map((raw) => {
       if (!raw || typeof raw.id !== 'string' || !raw.id || ids.has(raw.id)) throw new Error('id')
       ids.add(raw.id)
-      // 试用到期与结束日是后加字段，旧记录缺省为未填写，不提升存储版本。
-      const entry = { ...raw, trialEndDate: raw.trialEndDate ?? null, endDate: raw.endDate ?? null }
+      // 试用到期、结束日、暂停区间、套餐名与付款方式是后加字段，旧记录缺省为未填写，不提升存储版本。
+      const entry = {
+        ...raw,
+        trialEndDate: raw.trialEndDate ?? null,
+        endDate: raw.endDate ?? null,
+        pausedPeriods: raw.pausedPeriods ?? [],
+        planName: raw.planName ?? null,
+        paymentMethod: raw.paymentMethod ?? null,
+      }
       const migrated =
         envelope.version === 1
           ? {

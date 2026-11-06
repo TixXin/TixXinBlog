@@ -143,6 +143,9 @@ export async function seedSubscriptionFixtures(
           nextBillingDate: schedule.nextBillingDate ?? null,
           trialEndDate: 'trialEndDate' in schedule ? schedule.trialEndDate : null,
           endDate: 'endDate' in schedule ? schedule.endDate : null,
+          planName: index === 0 ? 'Plus' : index === 15 ? '域名注册（两年）' : null,
+          // 暂停中的样本记一段尚未结束的暂停；暂停开始不早于订阅开始
+          pausedPeriods: index === 7 ? [{ from: daysFrom(today, -20), to: null }] : [],
           iconMediaId: index === 6 ? mediaId : null,
           status: index === 13 ? 'draft' : index === 14 ? 'withdrawn' : 'published',
           sortOrder: 100 - index,

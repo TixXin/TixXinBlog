@@ -24,6 +24,8 @@
         :price-changes="stats.priceChanges ?? []"
         :currency="currency"
         :today="today"
+        :all-records="allRecords"
+        :rates="rates"
       />
     </CommonContextDrawer>
     <p class="subscription-note">
@@ -45,7 +47,7 @@
 
 <script setup lang="ts">
 import { formatAmount } from '@tixxin/subscription-domain'
-import type { SubscriptionLike } from '@tixxin/subscription-domain'
+import type { RateConfig, SubscriptionLike } from '@tixxin/subscription-domain'
 import type { SubscriptionCurrency, SubscriptionStats } from '~/features/subscription/types'
 
 defineProps<{
@@ -57,6 +59,9 @@ defineProps<{
   /** 年度账单所用记录与统计日 */
   records: readonly SubscriptionLike[]
   today: string
+  /** 不分币种的全部记录与参考汇率，用于年度账单的跨币种折合 */
+  allRecords?: readonly SubscriptionLike[]
+  rates?: RateConfig | null
 }>()
 
 const forecastOpen = ref(false),

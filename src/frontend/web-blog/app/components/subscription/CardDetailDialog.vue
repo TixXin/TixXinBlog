@@ -58,6 +58,18 @@
                 <dt>{{ $t('misc.subscription.card.platform') }}</dt>
                 <dd>{{ item.platform || $t('misc.subscription.card.notFilled') }}</dd>
               </div>
+              <div v-if="item.planName">
+                <dt>{{ $t('misc.subscription.card.planName') }}</dt>
+                <dd>{{ item.planName }}</dd>
+              </div>
+              <div v-if="paymentMethod">
+                <dt>{{ $t('misc.subscription.card.paymentMethod') }}</dt>
+                <dd>{{ paymentMethod }}</dd>
+              </div>
+              <div v-if="item.pausedPeriods?.length">
+                <dt>{{ $t('misc.subscription.card.pausedPeriods') }}</dt>
+                <dd>{{ pausedText }}</dd>
+              </div>
               <div>
                 <dt>{{ $t('misc.subscription.card.status') }}</dt>
                 <dd>
@@ -170,6 +182,13 @@ const spentText = computed(() => {
   const amounts = [...totals].map(([currency, amount]) => formatAmount(amount, currency)).join(' + ')
   return t('misc.subscription.card.spentValue', { amount: amounts, count: list.length }, list.length)
 })
+/** 付款方式只存在于本机记录（公开接口不返回） */
+const paymentMethod = computed(() => (props.item as { paymentMethod?: string | null }).paymentMethod ?? null)
+const pausedText = computed(() =>
+  (props.item.pausedPeriods ?? [])
+    .map((period) => `${period.from} – ${period.to ?? t('misc.subscription.card.pauseOngoing')}`)
+    .join('；'),
+)
 /** 本机逾期记录可一键续费：显示推进一个周期后的日期 */
 const renewDate = computed(() => (props.overdue ? advanceBilling(props.item) : null))
 const dialog = ref<HTMLElement | null>(null)
