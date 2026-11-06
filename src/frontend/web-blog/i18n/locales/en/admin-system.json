@@ -1053,7 +1053,13 @@
         "loadFailed": "Couldn't load the map. Region rankings are unaffected.",
         "unknown": "{count} more visitors have an unknown location (private, reserved or uncovered addresses).",
         "summary": "Top locations: {list}",
-        "tooltip": "{name}: {count} visitors"
+        "tooltip": "{name}: {count} visitors ({percent}%)",
+        "tools": "Map zoom",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "reset": "Reset view",
+        "hint": "Double-click to zoom in, double-click again to reset; drag to pan; hold Ctrl/⌘ and scroll, or pinch, to zoom.",
+        "tooltipEmpty": "{name}: no visitors"
       },
       "visits": {
         "title": "Recent visits",
@@ -1071,7 +1077,8 @@
         "loadFailed": "Couldn't load recent visits. Try again later.",
         "saveFailed": "Couldn't save the recent visits setting. Try again later.",
         "disableConfirm": "Turning this off deletes the recorded visits right away. Turn it off?"
-      }
+      },
+      "unknownRegion": "region unknown"
     },
     "command": {
       "open": "Search or jump",

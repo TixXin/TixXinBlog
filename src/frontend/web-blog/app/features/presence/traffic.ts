@@ -66,12 +66,12 @@ export function countryName(code: string, locale: string): string {
 }
 
 /** 省份排行的键“国家代码/名称”：国内省份只显示名称，其他国家前面加国名 */
-export function regionLabel(key: string, locale: string): string {
+export function regionLabel(key: string, locale: string, unknownRegion = '省份未知'): string {
   const slash = key.indexOf('/')
   if (slash < 0) return key
   const code = key.slice(0, slash),
-    name = key.slice(slash + 1)
-  return code === 'CN' ? name : `${countryName(code, locale)} · ${name}`
+    name = key.slice(slash + 1) || unknownRegion
+  return code === 'CN' && key.length > slash + 1 ? name : `${countryName(code, locale)} · ${name}`
 }
 
 /** 明细的地点：国名、省份、城市去重后拼接（城市常与直辖市同名） */

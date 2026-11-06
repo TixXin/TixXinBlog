@@ -54,7 +54,8 @@ export class TrafficService {
     if (input.location) {
       const { country, region } = input.location
       await this.increment(em, { day, dimension: 'country', key: country, cap: null })
-      if (country && region)
+      // 地区库只查到国家时记为“国家代码/”，排行显示“省份未知”，避免有国家访客而排行为空
+      if (country)
         await this.increment(em, {
           day,
           dimension: 'region',

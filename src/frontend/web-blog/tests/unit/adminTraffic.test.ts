@@ -83,6 +83,7 @@ it('国家名称随语言，省份键在国内只显示名称，地点去掉重�
   expect(countryName('', 'zh-CN')).toBe('')
   expect(regionLabel('CN/广东省', 'zh-CN')).toBe('广东省')
   expect(regionLabel('US/California', 'zh-CN')).toBe('美国 · California')
+  expect(regionLabel('CN/', 'zh-CN', '省份未知')).toBe('中国 · 省份未知')
   expect(visitPlace({ country: 'CN', region: '北京市', city: '北京市' }, 'zh-CN')).toBe('中国 · 北京市')
   expect(visitPlace({ country: '', region: '', city: '' }, 'zh-CN')).toBe('')
 })

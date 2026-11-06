@@ -1,14 +1,40 @@
 <!--
   @file TrafficMap.client.vue
-  @description 访问统计的世界地图：按国家访客数着色（ECharts map 按需引入，懒加载），悬停显示国名与访客数。
+  @description 访问统计的世界地图：按国家访客数着色（ECharts map 按需引入，懒加载），悬停显示国名、访客数与占比。
+               交互：双击放大该处、放大后再双击恢复；拖动平移；按住 Ctrl/⌘ 滚动或触控板捏合缩放（普通滚动照常滚动页面）；
+               右上角有放大、缩小与恢复按钮。
                国界数据为 public/geo/world.json（Natural Earth 中国视角，港澳台归入中国，生成方式见 scripts/geo/world-map.mjs），
                只在打开本卡片时读取一次；未知地区不上图，在下方另行说明。
 -->
 <template>
   <section class="traffic-map">
-    <h2>{{ t('admin-system.traffic.map.title') }}</h2>
+    <div class="traffic-map__head">
+      <h2>{{ t('admin-system.traffic.map.title') }}</h2>
+      <div v-if="ready" class="traffic-map__tools" role="group" :aria-label="t('admin-system.traffic.map.tools')">
+        <button type="button" :title="t('admin-system.traffic.map.zoomIn')" @click="zoomBy(1.6)">
+          <Icon name="lucide:zoom-in" size="15" /><span class="sr-only">{{
+            t('admin-system.traffic.map.zoomIn')
+          }}</span>
+        </button>
+        <button
+          type="button"
+          :title="t('admin-system.traffic.map.zoomOut')"
+          :disabled="!zoomed"
+          @click="zoomBy(1 / 1.6)"
+        >
+          <Icon name="lucide:zoom-out" size="15" /><span class="sr-only">{{
+            t('admin-system.traffic.map.zoomOut')
+          }}</span>
+        </button>
+        <button type="button" :title="t('admin-system.traffic.map.reset')" :disabled="!zoomed" @click="reset">
+          <Icon name="lucide:rotate-ccw" size="15" /><span class="sr-only">{{
+            t('admin-system.traffic.map.reset')
+          }}</span>
+        </button>
+      </div>
+    </div>
     <p v-if="failed" role="alert" class="traffic-map__note">{{ t('admin-system.traffic.map.loadFailed') }}</p>
-    <div v-else-if="ready" class="traffic-map__frame">
+    <div v-else-if="ready" ref="frame" class="traffic-map__frame" @wheel="onWheel">
       <VChart
         ref="chart"
         class="traffic-map__chart"
@@ -20,8 +46,11 @@
         :aria-label="summary"
         :data-map-ready="rendered"
         @rendered="rendered = true"
+        @zr:dblclick="onDoubleClick"
+        @georoam="zoomed = true"
       />
     </div>
+    <p v-if="ready" class="traffic-map__note">{{ t('admin-system.traffic.map.hint') }}</p>
     <p v-else class="traffic-map__note" role="status">{{ t('admin-system.traffic.map.loading') }}</p>
     <p v-if="unknown" class="traffic-map__note">
       {{ t('admin-system.traffic.map.unknown', { count: formatNumber(unknown) }) }}
@@ -55,7 +84,43 @@ const props = defineProps<{ countries: TrafficEntry[] }>()
 const { t, locale } = useI18n()
 const { currentThemeId } = useLayoutTheme()
 const colorMode = useColorMode()
-const chart = ref<{ getDom(): HTMLElement } | null>(null)
+const chart = ref<{ getDom(): HTMLElement; dispatchAction(payload: Record<string, unknown>): void } | null>(null)
+const frame = ref<HTMLElement | null>(null)
+/** 是否离开了初始视图：决定双击是放大还是恢复，以及缩小、恢复按钮是否可用 */
+const zoomed = ref(false)
+/** 变化时重建图表配置，地图回到初始缩放与位置 */
+const resetKey = ref(0)
+
+/** 以图表内的某个像素点为中心缩放；不给坐标时以图表中心缩放 */
+function zoomBy(factor: number, origin?: { x: number; y: number }) {
+  const dom = chart.value?.getDom()
+  if (!dom) return
+  chart.value!.dispatchAction({
+    type: 'geoRoam',
+    componentType: 'series',
+    seriesIndex: 0,
+    zoom: factor,
+    originX: origin?.x ?? dom.clientWidth / 2,
+    originY: origin?.y ?? dom.clientHeight / 2,
+  })
+  zoomed.value = true
+}
+function reset() {
+  resetKey.value++
+  zoomed.value = false
+}
+function onDoubleClick(event: { offsetX: number; offsetY: number }) {
+  if (zoomed.value) reset()
+  else zoomBy(3, { x: event.offsetX, y: event.offsetY })
+}
+/** 普通滚动留给页面；按住 Ctrl/⌘（触控板捏合也带 ctrlKey）时缩放地图 */
+function onWheel(event: WheelEvent) {
+  if (!event.ctrlKey && !event.metaKey) return
+  event.preventDefault()
+  const box = frame.value?.getBoundingClientRect()
+  if (!box) return
+  zoomBy(Math.exp(-event.deltaY / 200), { x: event.clientX - box.left, y: event.clientY - box.top })
+}
 const ready = ref(false),
   failed = ref(false),
   rendered = ref(false)
@@ -110,6 +175,8 @@ onMounted(async () => {
 })
 
 const known = computed(() => props.countries.filter((entry) => entry.key))
+const counts = computed(() => new Map(known.value.map((entry) => [entry.key, entry.count])))
+const total = computed(() => props.countries.reduce((sum, entry) => sum + entry.count, 0))
 const unknown = computed(() => props.countries.find((entry) => !entry.key)?.count ?? 0)
 const summary = computed(() =>
   known.value.length
@@ -122,6 +189,7 @@ const summary = computed(() =>
     : t('admin-system.traffic.noData'),
 )
 const option = computed<EChartsOption>(() => {
+  void resetKey.value
   const max = Math.max(1, ...known.value.map((entry) => entry.count))
   // 按平方根着色：访客集中在一两个国家时，少量访问的国家也能和没有访问的区分开；提示里仍显示原始人数
   return {
@@ -133,10 +201,14 @@ const option = computed<EChartsOption>(() => {
       confine: true,
       backgroundColor: colors.value.surface,
       textStyle: { color: colors.value.text },
+      // 着色用的是平方根，原始人数按国家代码从报表里查：ECharts 的 map 系列会丢掉数据项上的自定义字段
       formatter: (params) => {
-        const item = params as { name: string; data?: { count?: number } }
+        const item = params as { name: string }
         const name = countryName(item.name, locale.value) || item.name
-        return t('admin-system.traffic.map.tooltip', { name, count: formatNumber(item.data?.count ?? 0) })
+        const count = counts.value.get(item.name) ?? 0
+        if (!count) return t('admin-system.traffic.map.tooltipEmpty', { name })
+        const percent = total.value ? Math.round((count / total.value) * 100) : 0
+        return t('admin-system.traffic.map.tooltip', { name, count: formatNumber(count), percent })
       },
     },
     visualMap: {
@@ -155,7 +227,8 @@ const option = computed<EChartsOption>(() => {
       {
         type: 'map',
         map: MAP_NAME,
-        roam: true,
+        // 只允许拖动平移；缩放由双击、按钮和 Ctrl/⌘ 滚轮控制，避免滚动页面时误缩放地图
+        roam: 'move',
         scaleLimit: { min: 1, max: 8 },
         // 南极洲已在数据中剔除；容器宽高比贴合地图，四周只留少量边距
         aspectScale: 0.85,
@@ -167,7 +240,7 @@ const option = computed<EChartsOption>(() => {
         emphasis: { label: { show: false }, itemStyle: { areaColor: colors.value.high } },
         select: { disabled: true },
         label: { show: false },
-        data: known.value.map((entry) => ({ name: entry.key, value: Math.sqrt(entry.count), count: entry.count })),
+        data: known.value.map((entry) => ({ name: entry.key, value: Math.sqrt(entry.count) })),
       },
     ],
   }
@@ -183,7 +256,7 @@ const option = computed<EChartsOption>(() => {
   background: var(--surface-1);
 
   h2 {
-    margin: 0 0 0.75rem;
+    margin: 0;
     font-size: 0.9375rem;
     font-weight: 600;
   }
@@ -199,6 +272,50 @@ const option = computed<EChartsOption>(() => {
 .traffic-map__chart {
   position: absolute;
   inset: 0;
+}
+
+.traffic-map__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.traffic-map__tools {
+  display: flex;
+  gap: 0.25rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--text-secondary, var(--text-muted));
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: var(--border-hover, var(--border));
+      color: var(--text-main);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+}
+
+.traffic-map__frame {
+  cursor: grab;
+  touch-action: pan-y;
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .traffic-map__note {

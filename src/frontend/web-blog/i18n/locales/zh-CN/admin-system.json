@@ -1053,7 +1053,13 @@
         "loadFailed": "地图数据加载失败，地区排行不受影响。",
         "unknown": "另有 {count} 位访客的地区未知（内网、保留地址或地区库未覆盖）。",
         "summary": "访客最多的地区：{list}",
-        "tooltip": "{name}：{count} 位访客"
+        "tooltip": "{name}：{count} 位访客（占 {percent}%）",
+        "tools": "地图缩放",
+        "zoomIn": "放大",
+        "zoomOut": "缩小",
+        "reset": "恢复原始视图",
+        "hint": "双击放大，再次双击恢复；拖动平移；按住 Ctrl/⌘ 滚动或捏合触控板缩放。",
+        "tooltipEmpty": "{name}：暂无访客"
       },
       "visits": {
         "title": "近期访问",
@@ -1071,7 +1077,8 @@
         "loadFailed": "近期访问读取失败，请稍后重试",
         "saveFailed": "近期访问开关保存失败，请稍后重试",
         "disableConfirm": "关闭后会立即删除已记录的近期访问明细，确定关闭吗？"
-      }
+      },
+      "unknownRegion": "省份未知"
     },
     "command": {
       "open": "搜索或跳转",

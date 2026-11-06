@@ -101,7 +101,9 @@ async function refreshAll() {
   await Promise.all([refresh(), visits.value?.refresh()])
 }
 const regionText = (key: string) =>
-  key === TRAFFIC_OTHER_KEY ? t('admin-system.traffic.otherRegions') : regionLabel(key, locale.value)
+  key === TRAFFIC_OTHER_KEY
+    ? t('admin-system.traffic.otherRegions')
+    : regionLabel(key, locale.value, t('admin-system.traffic.unknownRegion'))
 
 function series(field: 'views' | 'visitors') {
   return (data.value?.days ?? []).map((day) => ({ date: day.date, value: day[field] }))

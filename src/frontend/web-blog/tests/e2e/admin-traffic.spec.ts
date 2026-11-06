@@ -90,3 +90,71 @@ test('近期访问默认关闭；开启后记录打码明细，博主本人的�
   await expect(card.getByRole('checkbox', { name: '记录近期访问' })).not.toBeChecked()
   await owner.context().close()
 })
+
+test('访客地图：悬停显示人数与占比，双击放大、再次双击恢复，按钮缩放，普通滚轮不缩放地图', async ({ browser }) => {
+  const owner = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage()
+  const report = {
+    from: '2026-10-01',
+    to: '2026-10-30',
+    days: [{ date: '2026-10-30', views: 10, visitors: 5 }],
+    totals: { views: 10, visitors: 5 },
+    pages: [],
+    referrers: [],
+    devices: [],
+    browsers: [],
+    countries: [
+      { key: 'CN', count: 3 },
+      { key: 'US', count: 1 },
+      { key: '', count: 1 },
+    ],
+    regions: [{ key: 'CN/', count: 3 }],
+  }
+  await owner.route('**/api/v1/admin/presence/traffic**', (route) => route.fulfill({ json: { code: 0, data: report } }))
+  await owner.goto('/admin/login')
+  await owner.getByRole('textbox', { name: '用户名', exact: true }).fill(process.env.E2E_USERNAME!)
+  await owner.getByRole('textbox', { name: '密码', exact: true }).fill(process.env.E2E_PASSWORD!)
+  await owner.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(owner).toHaveURL(/\/admin$/)
+  await owner.goto('/admin/traffic')
+  const map = owner.locator('.traffic-map')
+  await expect(map.locator('[data-map-ready="true"]')).toBeVisible()
+  await expect(owner.locator('.traffic-ranking').filter({ hasText: '地区排行' })).toContainText('中国 · 省份未知')
+
+  // 中国大致位于地图右侧偏上：悬停显示真实人数与占比
+  const box = (await map.locator('.traffic-map__frame').boundingBox())!
+  const china = { x: box.x + box.width * 0.76, y: box.y + box.height * 0.38 }
+  await owner.mouse.move(china.x, china.y)
+  await expect(owner.getByText('中国：3 位访客（占 60%）')).toBeVisible()
+
+  const zoomOut = map.getByRole('button', { name: '缩小' })
+  const reset = map.getByRole('button', { name: '恢复原始视图' })
+  const mapWidth = () =>
+    map
+      .locator('.traffic-map__chart svg path')
+      .first()
+      .evaluate(() => {
+        const paths = [...document.querySelectorAll('.traffic-map__chart svg path')]
+        return Math.max(...paths.map((path) => path.getBoundingClientRect().width))
+      })
+  const initial = await mapWidth()
+  await expect(zoomOut).toBeDisabled()
+
+  // 普通滚轮滚动页面，不改变地图大小
+  await owner.mouse.wheel(0, 200)
+  expect(await mapWidth()).toBeCloseTo(initial, 0)
+
+  await owner.mouse.move(china.x, china.y)
+  const point = (await map.locator('.traffic-map__frame').boundingBox())!
+  await owner.mouse.dblclick(point.x + point.width * 0.76, point.y + point.height * 0.38)
+  await expect.poll(mapWidth).toBeGreaterThan(initial * 2)
+  await expect(zoomOut).toBeEnabled()
+  await owner.mouse.dblclick(point.x + point.width * 0.5, point.y + point.height * 0.5)
+  await expect.poll(mapWidth).toBeLessThan(initial * 1.05)
+  await expect(reset).toBeDisabled()
+
+  await map.getByRole('button', { name: '放大' }).click()
+  await expect.poll(mapWidth).toBeGreaterThan(initial * 1.3)
+  await reset.click()
+  await expect.poll(mapWidth).toBeLessThan(initial * 1.05)
+  await owner.context().close()
+})
