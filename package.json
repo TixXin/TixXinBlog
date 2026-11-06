@@ -50,6 +50,7 @@
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:local": "bash scripts/check-local.sh",
     "push:main": "node scripts/dev/with-lock.mjs push -- node scripts/dev/push-main.mjs",
+    "release:prepare": "node scripts/dev/release-prepare.mjs",
     "docs:screenshots": "node scripts/docs/readme-screenshots.mjs",
     "test:e2e": "node scripts/dev/with-lock.mjs build -- corepack pnpm run test:e2e:steps",
     "test:e2e:steps": "corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs",

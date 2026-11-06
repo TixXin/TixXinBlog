@@ -91,17 +91,18 @@
 
 ## 代码规范与提交准备
 
-| 命令            | 实际执行                                                                |
-| --------------- | ----------------------------------------------------------------------- |
-| `lint`          | 前端 ESLint，随后运行 `lint:size`                                       |
-| `lint:size`     | `node scripts/check-file-size.mjs`                                      |
-| `lint:fix`      | `corepack pnpm --filter web-blog exec eslint . --fix`                   |
-| `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"`                  |
-| `prepare`       | `husky`                                                                 |
-| `check:secrets` | `node scripts/check-secrets.mjs`                                        |
-| `check:local`   | `bash scripts/check-local.sh`                                           |
-| `push:main`     | `node scripts/dev/with-lock.mjs push -- node scripts/dev/push-main.mjs` |
-| `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本                       |
+| 命令              | 实际执行                                                                |
+| ----------------- | ----------------------------------------------------------------------- |
+| `lint`            | 前端 ESLint，随后运行 `lint:size`                                       |
+| `lint:size`       | `node scripts/check-file-size.mjs`                                      |
+| `lint:fix`        | `corepack pnpm --filter web-blog exec eslint . --fix`                   |
+| `format`          | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"`                  |
+| `prepare`         | `husky`                                                                 |
+| `check:secrets`   | `node scripts/check-secrets.mjs`                                        |
+| `check:local`     | `bash scripts/check-local.sh`                                           |
+| `push:main`       | `node scripts/dev/with-lock.mjs push -- node scripts/dev/push-main.mjs` |
+| `release:prepare` | `node scripts/dev/release-prepare.mjs`                                  |
+| `lint:shell`      | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本                       |
 
 - `lint`：检查前端子项目的 ESLint 规则，不修复文件，随后执行 `lint:size`；不包含后端 lint、类型检查或单元测试。
 - `lint:size`：检查前后端源码文件体量，新文件不得超过上限，存量超限文件只许变短；拆分后加 `--update` 收紧基线。上限与例外见[代码组织与模块化](code-organization.md#文件体量上限)。
@@ -111,6 +112,7 @@
 - `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
 - `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端）；改动影响全站外壳或构建产物（构建配置、分块规则、根组件、布局、插件、主题、全局样式、补丁、锁文件）时加跑主题切换、切页与水合、首页、搜索弹窗和无障碍的冒烟 spec，规则见 [`scripts/ci/e2e-specs.mjs`](../scripts/ci/e2e-specs.mjs)；其余没有改动 spec 时只提示，完整回归交给 CI，`--e2e-full` 在本机跑全部浏览器 spec，`--all` 不按改动挑选。后端改动还会构建 server-main 并运行对应的 HTTP 集成测试：`modules/<模块>/` 选中名称以该模块开头的测试，`operations`、`post`、`backup` 另有映射，改动测试文件本身只跑该测试；公共代码、实体、迁移或测试辅助文件只跑通用的 `integration.mjs` 并提示用 `--all` 跑全量。测试清单取自 server-main 的 `test:integration`，规则见 [`scripts/ci/integration-tests.mjs`](../scripts/ci/integration-tests.mjs)；这些测试在开发库所在的 PostgreSQL 上各自建临时库，需要本机数据库可用。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
 - `push:main`：在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交（不自动 rebase）、列出待推送提交、运行 `check:local`（参数原样转交，如 `--e2e`）、推送到 `origin/main`；任一步失败即停止。待推送提交是否都属于本会话仍需运行前确认。
+- `release:prepare <版本> [--dry-run] [--push] [--tag]`：发版准备。校验新版本大于上一个标签、三处 `package.json` 版本一致且无未提交改动；把 `CHANGELOG.md` 的「未发布」改成带日期的版本段落，并在「升级说明」补上可从改动推出的陈述（测试版提示、未改动的环境与编排、无迁移、内容包版本未变）；自上一个标签以来新增迁移、改了 `deploy/` 与编排或内容包升版，而「未发布」没有写明时拒绝；列出没改更新日志的 feat/fix 提交供核对。只用 `git commit -- <文件>` 提交这几个文件。`--push` 接着运行 `push:main`，`--tag` 再打附注标签并推送（只用于预发布；正式版等 CI 全绿后手动打标签）。`check:local` 遇到只改版本号与更新日志的提交时只做敏感信息与署名检查。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试

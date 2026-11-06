@@ -66,6 +66,16 @@ printf '检查范围（相对 %s）：%s 个文件\n' "$base" "$(printf '%s\n' "
 step '敏感信息扫描' corepack pnpm check:secrets
 [ "$base" = HEAD ] || step '提交信息 AI 署名' bash scripts/check-ai-attribution.sh "$base..HEAD"
 
+# 发版的版本提交只改 CHANGELOG.md 与各 package.json 的 version 行，不影响构建与测试，跳过其余检查（--all/--e2e 时照常运行）。
+if [ "$run_all" = 0 ] && [ "$run_e2e" = 0 ] && node scripts/dev/release-prepare.mjs --version-only "$base"; then
+  printf '\n只改了版本号与更新日志，跳过其余检查。\n'
+  if [ "${#failed[@]}" -gt 0 ]; then
+    printf '\n未通过：%s\n先修复再推送。\n' "${failed[*]}" >&2
+    exit 1
+  fi
+  exit 0
+fi
+
 if changed '^(src/frontend/|src/shared/|patches/|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|package\.json$)'; then
   step '前端 lint' corepack pnpm lint
   step '前端类型检查' corepack pnpm --filter web-blog exec nuxt typecheck
