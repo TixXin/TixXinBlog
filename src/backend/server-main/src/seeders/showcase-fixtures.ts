@@ -17,7 +17,7 @@ import { GalleryService } from '../modules/gallery/gallery.service'
 import { LinkService } from '../modules/link/link.service'
 import { GallerySettings } from '../entities/gallery-settings.entity'
 import { LinkSettings } from '../entities/link-settings.entity'
-import type { AboutSettingsDto } from '../modules/site/about-settings'
+import { SHOWCASE_ABOUT, sameAbout } from './showcase-about'
 import { GuestbookReadService } from '../modules/guestbook/guestbook-read.service'
 import { GuestbookWriteService, lockGuestbook } from '../modules/guestbook/guestbook-write.service'
 import { SiteSettingsService } from '../modules/site/site-settings.service'
@@ -282,67 +282,6 @@ async function ensureAssets(
   }
   return assets
 }
-const item = (title: string, period: string, detail = '') => ({ title, period, detail, visible: true })
-// 关于页四类栏目：经历按时间倒序，技能写年限与用法，兴趣与在读呼应文章和朋友圈里的内容。
-const SHOWCASE_ABOUT: AboutSettingsDto = {
-  visible: true,
-  introduction:
-    '我是 TixXin，在深圳做前端开发。这里记录 Vue、Nuxt 和 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。文章尽量写清楚“为什么这么做”，而不只是“怎么做”。',
-  sections: [
-    {
-      kind: 'experience',
-      visible: true,
-      items: [
-        item(
-          '高级前端工程师 · 一家做企业服务的公司',
-          '2023 - 至今',
-          '负责中后台产品的前端架构，主导从 Vue 2 迁到 Vue 3 和 Vite，搭了组件库和前端监控，团队从三个人带到七个人。',
-        ),
-        item(
-          '前端工程师 · 一家电商创业公司',
-          '2021 - 2023',
-          '做商城小程序、营销活动页和运营后台，第一次接触 SSR 和性能优化，也是在这里开始写这个博客。',
-        ),
-        item(
-          '前端实习生',
-          '2020 - 2021',
-          '在外包团队写了一年页面，学会了把设计稿还原到像素级，也学会了不在周五下午上线。',
-        ),
-      ],
-    },
-    {
-      kind: 'skill',
-      visible: true,
-      items: [
-        item('Vue / Nuxt', '5 年', '日常主力，组合式函数、SSR 与水合问题是踩坑最多的地方。'),
-        item('TypeScript', '4 年', '类型收窄和泛型约束写得比较多，喜欢让类型替代注释。'),
-        item('CSS / SCSS', '6 年', '设计还原、主题变量和动效，容器查询已经在项目里用起来了。'),
-        item('Node.js / NestJS', '3 年', '写过博客后端和几个内部工具服务，PostgreSQL 打交道最多。'),
-        item('Docker / CI', '3 年', '本地开发环境、GitHub Actions 流水线和小机器上的部署。'),
-      ],
-    },
-    {
-      kind: 'interest',
-      visible: true,
-      items: [
-        item('摄影', '', '周末带相机出门，城市夜景和山里的云海拍得最多。'),
-        item('骑行', '', '深圳湾到大梅沙，一次五十公里左右。'),
-        item('咖啡', '', '在找城市角落里安静的独立咖啡馆。'),
-        item('阅读', '', '一年二十多本，技术和非虚构各一半。'),
-        item('做饭', '', '从完全不会到能做几道像样的菜。'),
-      ],
-    },
-    {
-      kind: 'reading',
-      visible: true,
-      items: [
-        item('重构：改善既有代码的设计', 'Martin Fowler', '第三遍，这次对照自己的代码一条条看坏味道。'),
-        item('人月神话', 'Frederick Brooks', '“没有银弹”那一章值得每年重读。'),
-        item('置身事内', '兰小欢', '读完写了一篇书评，放在随笔日记里。'),
-      ],
-    },
-  ],
-}
 const SHOWCASE_GEAR = [
   { icon: 'lucide:camera', name: 'Sony A7M4', description: '主力相机，夜景和风光' },
   { icon: 'lucide:circle', name: 'FE 24-70mm F2.8 GM II', description: '常用镜头，一镜走天下' },
@@ -374,9 +313,10 @@ async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
   const latest = await em.findOne(SiteSettingsRevision, { revision: current.revision })
   if (latest?.reason === SHOWCASE_PROFILE_REASON) {
     // 最新版本仍是本样本写入的资料（博主保存过会产生新原因的版本）
-    // 早期写入时关于页栏目为空、也没有状态类型（“摆烂中”应显示为离开），这里补齐
+    // 早期写入时关于页栏目为空或还是旧版样本、也没有状态类型（“摆烂中”应显示为离开），这里补齐；
+    // 最新修订仍是样本写入，说明博主没有编辑过，关于页整体换成当前样本是安全的
     const patch = {
-      ...(!current.about.sections.length ? { about: SHOWCASE_ABOUT } : {}),
+      ...(!sameAbout(current.about, SHOWCASE_ABOUT) ? { about: SHOWCASE_ABOUT } : {}),
       ...(!current.presenceStatus && current.presenceLabel === '摆烂中' ? { presenceStatus: 'idle' as const } : {}),
     }
     if (Object.keys(patch).length) {

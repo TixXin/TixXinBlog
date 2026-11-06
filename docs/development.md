@@ -124,7 +124,7 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 
 核心样本集 `core-v1` 的公开讨论覆盖可分页的评论量、两级回复、待审与隐藏状态、长评论以及跨文章分布，并保留一个未被任何内容引用的孤立媒体资产，供媒体库和清理计划核对。提高覆盖要求后，已经补种过的开发库需要再次执行 `seed-data --dataset core-v1` 才会补齐新增记录；重复执行不覆盖已修改内容，也不复活已删除记录。
 
-真实感样本集 `showcase-v1` 让开发库看起来像一个持续更新的个人博客：五十篇每篇一千六百字以上的长文（专栏、标签、封面、置顶与两年内的发布日期分布）及针对正文的访客评论与博主回复、按文章热度铺开的点赞记录、十八条带地点与器材的朋友圈及其评论点赞、四张图库作品、两条当天留言，以及博主资料（姓名、头衔、头像、在线状态与签名、上线日期、公告和社交链接）。正文与评论保存在 [`showcase-content/`](../src/backend/server-main/src/seeders/showcase-content/)，图片素材及来源登记在 [`showcase-assets/`](../src/backend/server-main/src/seeders/showcase-assets/README.md)，访客不带头像，前端按名字生成首字母头像。博主资料只在仍等于初始值或 `prepare-profile` 整理结果时写入，已编辑过的配置原样保留并在报告的 `unavailable` 中说明；资料改名时，只有指纹未变的样本里的博主署名会跟着更新。通过 `corepack pnpm db:dev seed-data --dataset showcase-v1` 预览，按本节流程写入；与容量档同时存在时统计会叠加，想得到接近真实的站点数字先执行 `volume --clear`。
+真实感样本集 `showcase-v1` 让开发库看起来像一个持续更新的个人博客：五十篇每篇一千六百字以上的长文（专栏、标签、封面、置顶与两年内的发布日期分布）及针对正文的访客评论与博主回复、按文章热度铺开的点赞记录、十八条带地点与器材的朋友圈及其评论点赞、四张图库作品、两条当天留言，以及博主资料（姓名、头衔、头像、在线状态与签名、上线日期、公告和社交链接）和关于页（六类栏目含带更新日期的“现在”与装备、部分条目的链接与英文版本、英文简介、本站信息与只指向博主 GitHub Sponsors 的支持方式，内容定义在 [`showcase-about.ts`](../src/backend/server-main/src/seeders/showcase-about.ts)）。正文与评论保存在 [`showcase-content/`](../src/backend/server-main/src/seeders/showcase-content/)，图片素材及来源登记在 [`showcase-assets/`](../src/backend/server-main/src/seeders/showcase-assets/README.md)，访客不带头像，前端按名字生成首字母头像。博主资料只在仍等于初始值或 `prepare-profile` 整理结果时写入，已编辑过的配置原样保留并在报告的 `unavailable` 中说明；最新修订仍是本样本写入（博主没再保存过）时，再次补种会把关于页更新为当前样本定义；资料改名时，只有指纹未变的样本里的博主署名会跟着更新。通过 `corepack pnpm db:dev seed-data --dataset showcase-v1` 预览，按本节流程写入；与容量档同时存在时统计会叠加，想得到接近真实的站点数字先执行 `volume --clear`。
 
 开发样本必须覆盖当前功能的常见状态、分页、关联、近期日期和失败恢复。正文使用自然内容，内部稳定标识与用途说明保存在脚本和归属记录中。日常开发样本长期保留；自动回归使用可清理的独立数据库、媒体与账号。
 
